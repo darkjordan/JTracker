@@ -115,7 +115,12 @@ CSV export, Supabase client/server + anon-session proxy.
   filters + "mark reviewed" (reviewed column). Privacy **eye masks only the KPI
   tiles**. `lib/stats.ts` pure + unit-tested (24 Vitest total). Verified via
   Playwright mobile on the prod LAN build.
-- **DEPLOYED (2026-08-02):** live at **https://jtracker-jcmy.vercel.app** (Vercel
+- **Primary URL: https://jtracker-my.vercel.app** (`jtracker.vercel.app` was taken
+  globally). It's a manual alias → re-run `vercel alias set <prod-deployment>
+  jtracker-my.vercel.app` after a `vercel --prod` if it stops pointing to latest.
+  Supabase site_url + allow-list use this domain. Older `jtracker-jcmy`/`-silk`
+  aliases still work.
+- **DEPLOYED (2026-08-02):** live (Vercel
   team `jcmy`, project `jtracker`, id `prj_iajul72jMpYU1kxxZShgV8Ok0bVJ`). Prod env
   vars `NEXT_PUBLIC_SUPABASE_URL` + `_ANON_KEY` set. **Deployment Protection
   (ssoProtection) is OFF** (must stay off — it gates the app behind Vercel SSO).
