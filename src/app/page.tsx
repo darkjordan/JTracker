@@ -55,6 +55,14 @@ export default function Dashboard() {
     })();
   }, [load]);
 
+  const reloadCategories = useCallback(async () => {
+    try {
+      setCategories(await listCategories());
+    } catch {
+      /* keep existing categories on failure */
+    }
+  }, []);
+
   const catById = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
     [categories]
@@ -113,7 +121,11 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <QuickEntry onAdded={(t) => setTxns((prev) => [t, ...prev])} />
+      <QuickEntry
+        categories={categories}
+        onAdded={(t) => setTxns((prev) => [t, ...prev])}
+        onCategoryCreated={reloadCategories}
+      />
 
       {/* Transaction list */}
       <section className="mt-5">

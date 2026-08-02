@@ -1,27 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { parseAmountToSen, formatSen, normalizeMerchant } from "@/lib/money";
-import { createTransaction } from "@/lib/api/transactions";
-import type { Transaction, TxType } from "@/lib/api/types";
+import { createTransaction, todayLocal } from "@/lib/api/transactions";
+import { findOrCreateCategory } from "@/lib/api/categories";
+import type { Category, Transaction, TxType } from "@/lib/api/types";
 
-// Structured quick-add: pick Expense/Income, enter the amount on the number
-// keypad, add an optional description. No keyword parsing needed.
+const OTHER = "__other__";
+
+// Structured quick-add: Expense/Income toggle, numeric amount, description,
+// category (or "Other…" free text), and a date that defaults to today but can
+// be back-dated.
 export default function QuickEntry({
+  categories,
   onAdded,
+  onCategoryCreated,
 }: {
+  categories: Category[];
   onAdded: (t: Transaction) => void;
+  onCategoryCreated?: () => void;
 }) {
   const [type, setType] = useState<TxType>("expense");
   const [amount, setAmount] = useState("");
   const [merchant, setMerchant] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [customCat, setCustomCat] = useState("");
+  const [date, setDate] = useState(todayLocal());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const amountSen = parseAmountToSen(amount);
   const isIncome = type === "income";
 
-  // Keep the amount field to digits + a single 2-dp decimal.
+  const options = useMemo(
+    () => categories.filter((c) => c.type === type || c.type === "both"),
+    [categories, type]
+  );
+
+  function switchType(t: TxType) {
+    setType(t);
+    setCategoryId("");
+    setCustomCat("");
+  }
+
   function onAmountChange(v: string) {
     let cleaned = v.replace(/[^0-9.]/g, "");
     const dot = cleaned.indexOf(".");
@@ -43,16 +64,39 @@ export default function QuickEntry({
     setError(null);
     setBusy(true);
     try {
+      let category_id: string | null = null;
+      let created = false;
+      if (categoryId === OTHER) {
+        const name = customCat.trim();
+        if (!name) {
+          setError("Name the new category, or pick one.");
+          setBusy(false);
+          return;
+        }
+        const cat = await findOrCreateCategory(name, type);
+        category_id = cat.id;
+        created = true;
+      } else if (categoryId) {
+        category_id = categoryId;
+      }
+
       const t = await createTransaction({
         type,
         amount_sen: sen,
         merchant: merchant.trim() || (isIncome ? "Income" : "Expense"),
         merchant_norm: normalizeMerchant(merchant),
+        category_id,
+        occurred_at: date,
         source: "manual",
       });
+
       setAmount("");
       setMerchant("");
+      setCategoryId("");
+      setCustomCat("");
+      setDate(todayLocal());
       onAdded(t);
+      if (created) onCategoryCreated?.();
     } catch {
       setError("Couldn’t save. Try again.");
     } finally {
@@ -60,13 +104,16 @@ export default function QuickEntry({
     }
   }
 
+  const field =
+    "rounded-xl border border-gray-300 px-3 py-2.5 text-base outline-none focus:border-indigo-600";
+
   return (
     <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5">
       {/* Type toggle */}
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={() => setType("expense")}
+          onClick={() => switchType("expense")}
           className={`rounded-xl py-2.5 text-sm font-semibold ${
             !isIncome ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-500"
           }`}
@@ -75,7 +122,7 @@ export default function QuickEntry({
         </button>
         <button
           type="button"
-          onClick={() => setType("income")}
+          onClick={() => switchType("income")}
           className={`rounded-xl py-2.5 text-sm font-semibold ${
             isIncome ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-500"
           }`}
@@ -86,7 +133,6 @@ export default function QuickEntry({
 
       {/* Amount — opens the number keypad on phones */}
       <div className="mt-3 flex items-center rounded-xl border border-gray-300 px-3 focus-within:border-indigo-600">
-
         <span className="mr-1.5 text-lg font-semibold text-gray-400">RM</span>
         <input
           type="text"
@@ -108,8 +154,48 @@ export default function QuickEntry({
         onKeyDown={(e) => e.key === "Enter" && add()}
         placeholder="What for? (e.g. Nasi Lemak)"
         aria-label="Description"
-        className="mt-2 w-full rounded-xl border border-gray-300 px-3 py-2.5 text-base outline-none focus:border-indigo-600"
+        className={`mt-2 w-full ${field}`}
       />
+
+      {/* Category + Date */}
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          aria-label="Category"
+          className={`w-full bg-white ${field}`}
+        >
+          <option value="">Uncategorized</option>
+          {options.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.icon ? `${c.icon} ` : ""}
+              {c.name}
+            </option>
+          ))}
+          <option value={OTHER}>＋ Other…</option>
+        </select>
+        <input
+          type="date"
+          value={date}
+          max={todayLocal()}
+          onChange={(e) => setDate(e.target.value)}
+          aria-label="Date"
+          className={`w-full ${field}`}
+        />
+      </div>
+
+      {categoryId === OTHER && (
+        <input
+          type="text"
+          value={customCat}
+          onChange={(e) => setCustomCat(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && add()}
+          placeholder="New category name"
+          aria-label="New category name"
+          className={`mt-2 w-full ${field}`}
+          autoFocus
+        />
+      )}
 
       {error && <p className="mt-2 px-1 text-xs text-red-600">{error}</p>}
 
