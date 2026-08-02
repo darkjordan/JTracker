@@ -58,8 +58,8 @@ export default function QuickEntry({
         <button
           type="button"
           onClick={add}
-          disabled={busy || !parsed}
-          className="shrink-0 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+          disabled={busy}
+          className="shrink-0 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
         >
           {busy ? "…" : "Add"}
         </button>
