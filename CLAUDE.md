@@ -115,5 +115,13 @@ CSV export, Supabase client/server + anon-session proxy.
   filters + "mark reviewed" (reviewed column). Privacy **eye masks only the KPI
   tiles**. `lib/stats.ts` pure + unit-tested (24 Vitest total). Verified via
   Playwright mobile on the prod LAN build.
-- **No Vercel deploy yet.** **Next: Phase 3** (screenshot capture — parse-capture
-  edge function, review sheet, merchant_memory).
+- **DEPLOYED (2026-08-02):** live at **https://jtracker-jcmy.vercel.app** (Vercel
+  team `jcmy`, project `jtracker`, id `prj_iajul72jMpYU1kxxZShgV8Ok0bVJ`). Prod env
+  vars `NEXT_PUBLIC_SUPABASE_URL` + `_ANON_KEY` set. **Deployment Protection
+  (ssoProtection) is OFF** (must stay off — it gates the app behind Vercel SSO).
+  Deployed via Vercel CLI (`npx vercel --prod --token …`), NOT connected to GitHub
+  git-integration — so pushes do **not** auto-deploy; re-run `vercel --prod` (or
+  connect the repo in Vercel → Settings → Git for auto-deploy). The Vercel token is
+  a secret — never commit it; rotate after use.
+- **Next: Phase 3** (screenshot capture — parse-capture edge function, review
+  sheet, merchant_memory).
