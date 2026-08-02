@@ -39,12 +39,12 @@ export default function ScanButton({
         disabled={busy}
         className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 py-2.5 text-sm font-semibold text-indigo-700 disabled:opacity-60"
       >
-        {busy ? "Scanning…" : "📷 Scan a receipt / screenshot"}
+        {busy ? "Scanning…" : "📷 Scan a receipt (image or PDF)"}
       </button>
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,application/pdf"
         onChange={onFile}
         className="hidden"
       />
