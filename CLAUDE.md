@@ -151,5 +151,15 @@ CSV export, Supabase client/server + anon-session proxy.
   `purge_stale_anon` (daily 03:00 UTC, see `supabase/migrations/0003_anon_retention.sql`)
   deletes anonymous users >30d old, or empty ones >1d — so stray anonymous data
   never accumulates (leak prevention). Deleting an auth user cascades their rows.
-- **Next: Phase 3** (screenshot capture — parse-capture edge function, review
-  sheet, merchant_memory; needs a Gemini API key).
+- **Phase 3 DONE + LIVE (2026-08-03):** screenshot capture. Edge function
+  `parse-capture` deployed (Gemini `gemini-flash-latest` vision, strict JSON
+  schema, temp 0, server-side daily cap 20 via `ai_usage`, never writes txns).
+  `GEMINI_API_KEY` secret set on the project (shared with JKira's free key).
+  Client: ScanButton + CaptureReview (review-before-save) + `merchant_memory`
+  (category remembered per merchant; shows "· remembered" on repeat). Verified:
+  synthetic receipt parsed (TEALIVE/RM8.50/date/Food&Drink), save creates row,
+  2nd scan same merchant → remembered; 401 no-auth, 400 bad body, usage logged.
+  Deploy edge fn via `SUPABASE_ACCESS_TOKEN=<sbp> npx supabase functions deploy
+  parse-capture --project-ref yhepkangpnrcrvetusfy` (no Docker needed).
+- **Next: Phase 4** (PDF bank-statement import — pdf kind in parse-capture,
+  reconciliation check, dedupe review, commit/rollback).
