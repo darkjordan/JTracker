@@ -1,4 +1,4 @@
-# duit. — Personal Money Tracker PWA (Project Spec)
+# JTracker — Personal Money Tracker PWA (Project Spec)
 
 > **Purpose of this file:** Hand this to an AI coding agent (Claude Sonnet) as the single source of truth for a weekend build. Follow phases in order. Phase gates are mandatory. This app reuses the JKira stack and patterns (Supabase, PWA, Gemini edge function, EN/中文/BM i18n, Google SSO) — where this spec says "same as JKira", port the existing pattern rather than reinventing it.
 
@@ -6,7 +6,7 @@
 
 ## 1. Product Summary
 
-**duit.** is a Malaysian personal money tracker. It tracks **income, expenses, and categories** with near-zero manual effort: transactions enter the app via free-text quick entry, screenshot capture (TnG/Grab/banking notifications, physical receipts), and monthly **bank statement PDF import**. It visualizes spending with client-side graphs and — the differentiator — tracks expenses against **LHDN personal tax relief categories** year-round so tax filing in March is a report, not a panic.
+**JTracker** is a Malaysian personal money tracker. It tracks **income, expenses, and categories** with near-zero manual effort: transactions enter the app via free-text quick entry, screenshot capture (TnG/Grab/banking notifications, physical receipts), and monthly **bank statement PDF import**. It visualizes spending with client-side graphs and — the differentiator — tracks expenses against **LHDN personal tax relief categories** year-round so tax filing in March is a report, not a panic.
 
 **Core design decisions (do not deviate):**
 
@@ -16,7 +16,7 @@
 4. **MYR, integer sen.** All money is stored and computed as integer sen (`amount_sen`). Same rule as JKira: money never exists as a float outside `lib/money.ts`.
 5. **Single-user, private data.** Unlike JKira there is no sharing, no links, no guests. Every row is owned by one user and protected by RLS.
 6. **Anonymous start, SSO nudge.** User can start instantly with an anonymous Supabase session (same as JKira), but the app nudges Google sign-in after 10 saved transactions with an explicit warning: "Your data lives only on this browser until you sign in." CSV export is available from Phase 1.
-7. **PWA.** Installable, same install-button pattern as JKira. Registers as a **Web Share Target** (post-install) so screenshots can be shared into duit. from the Android share sheet.
+7. **PWA.** Installable, same install-button pattern as JKira. Registers as a **Web Share Target** (post-install) so screenshots can be shared into JTracker from the Android share sheet.
 
 ---
 
@@ -90,7 +90,7 @@ Single input box pinned at top of dashboard. User types `nasi lemak 8.50` or `sa
 - One-tap save. Entire flow must work offline-queued (see §7 PWA).
 
 ### 4.2 Screenshot capture
-Sources: file upload button, camera, or **Web Share Target** (share a screenshot from gallery/another app into duit.).
+Sources: file upload button, camera, or **Web Share Target** (share a screenshot from gallery/another app into JTracker).
 - Client compresses image (reuse JKira's compression util) → Edge Function `parse-capture` → Gemini vision.
 - Prompt asks for strict JSON: `{ type, amount, merchant, date, suggested_category, confidence }`. Handles: TnG eWallet receipts, GrabPay/Grab ride summaries, DuitNow transfer confirmations, banking app push-notification screenshots, physical receipts.
 - Result shown in a **review sheet** (editable fields, category picker, tax relief picker) → Save. Confirmed merchant/category upserts `merchant_memory`.
@@ -137,7 +137,7 @@ All charts must render from a single month-window query; do not fetch all histor
 - **Auth:** anonymous Supabase session on first open; optional Google SSO to persist across devices. On sign-in, migrate anonymous user's rows to the Google identity (Supabase `linkIdentity` / or server-side user-id update — verify current Supabase anonymous-link API at build time). SSO nudge banner after 10 transactions.
 - **CSV export:** Settings → export all transactions (and relief report) as CSV. Ship in Phase 1 — this is the data-safety escape hatch.
 - **i18n:** EN / 中文 / Bahasa Malaysia, same switcher pattern and persistence as JKira. All seed category and relief names localized (columns provided in §3).
-- **PWA:** manifest + icons (`duit.` wordmark, keep JKira's visual family), install button on dashboard, service worker. **Web Share Target** in manifest for images (`share_target` with `enctype: multipart/form-data`) — note it only activates after install; the upload button covers the pre-install case. Offline: quick-entry writes queue in IndexedDB and sync when online; captures/imports require connectivity (show clear message).
+- **PWA:** manifest + icons (`JTracker` wordmark, keep JKira's visual family), install button on dashboard, service worker. **Web Share Target** in manifest for images (`share_target` with `enctype: multipart/form-data`) — note it only activates after install; the upload button covers the pre-install case. Offline: quick-entry writes queue in IndexedDB and sync when online; captures/imports require connectivity (show clear message).
 
 ---
 
@@ -160,7 +160,7 @@ All charts must render from a single month-window query; do not fetch all histor
 - ❌ Shared/household tracking
 - ❌ Recurring transaction auto-generation (v2 candidate)
 - ❌ Receipt line-item breakdown (whole-receipt amount only — this is not JKira)
-- ❌ Payments of any kind — duit. never touches money movement
+- ❌ Payments of any kind — JTracker never touches money movement
 
 When the coding agent proposes any of these mid-build, point it back here.
 

@@ -1,11 +1,11 @@
-# duit.
+# JTracker
 
 A Malaysian personal money tracker PWA — income & expenses with near-zero manual
 effort (quick text entry, screenshot capture, bank-statement PDF import),
 client-side graphs, and year-round **LHDN tax-relief tracking** so filing in March
 is a report, not a panic.
 
-Single-user, private, MYR-only. **duit. never moves money.**
+Single-user, private, MYR-only. **JTracker never moves money.**
 
 - 📄 **[SPEC.md](SPEC.md)** — the authoritative product & engineering spec (build in phases).
 - 🛠️ **[CLAUDE.md](CLAUDE.md)** — working rules, stack, and conventions for contributors/agents.

@@ -1,6 +1,6 @@
-# JTracker — "duit." personal money tracker (project instructions)
+# JTracker — personal money tracker (project instructions)
 
-**duit.** is a Malaysian personal money tracker PWA: income/expense/categories with
+**JTracker** is a Malaysian personal money tracker PWA: income/expense/categories with
 near-zero manual entry (free-text quick entry, screenshot capture, bank-statement
 PDF import), client-side graphs, and year-round **LHDN tax-relief tracking**.
 Single-user, private, and it **never moves money**. Reuses the JKira stack/patterns.
@@ -41,14 +41,19 @@ file holds the working rules; SPEC.md holds the what/why.
 
 ## Stack (same as JKira)
 Next.js 15 (App Router) + React + TypeScript (**strict**, no `any` in `src/lib`) +
-Tailwind + Supabase (Postgres / RLS / Auth / Storage / **Edge Functions**) + Vercel.
-Charts: Recharts *or* Chart.js (pick one, keep the bundle small). Tests: **Vitest**.
+Tailwind v4 + Supabase (Postgres / RLS / Auth / Storage / **Edge Functions**) +
+Vercel. Charts: Recharts *or* Chart.js (pick one, keep the bundle small). Tests:
+**Vitest**.
+
+> **Next.js 15 note** (see `AGENTS.md`): this Next may differ from training-data
+> priors. Authoritative docs are bundled at `node_modules/next/dist/docs/` — check
+> them before using an API you're unsure about.
 
 **Reference implementation to port from: `../Jkira`** — i18n (EN/中文/BM) switcher +
 persistence, PWA (manifest/install button/service worker), Google SSO + anonymous
 session + link-on-signin, client-side image compression, Gemini prompt +
 JSON-schema output, and the receipt reconciliation-check pattern.
-Note: JKira calls Gemini from a Next.js API route; **duit. requires a Supabase Edge
+Note: JKira calls Gemini from a Next.js API route; **JTracker requires a Supabase Edge
 Function** (`parse-capture`) instead — follow the spec.
 
 ## Conventions (SPEC §11)
@@ -82,6 +87,15 @@ Management API (**one statement per call**). Keep migrations in `supabase/migrat
 secrets, server-side) `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` as needed.
 
 ## Current status (keep short; update as phases ship)
-**Not yet scaffolded.** Repo holds SPEC.md + CLAUDE.md + README. **Next: Phase 1**
-(money core + manual entry). No Supabase project or Vercel deploy exists for duit.
-yet — create these at the start of Phase 1.
+**Phase 1 DONE** (money core + manual entry). Gate passed: Vitest 15/15
+(`money.ts`, `parse-entry.ts`), build + lint clean, RLS verified (user B cannot
+read/spoof user A). Shipped: `src/lib/money.ts`, `src/lib/parse-entry.ts`,
+`src/lib/api/` (transactions, categories, types), `src/lib/csv.ts`, dashboard
+(`src/app/page.tsx`) with quick-entry + month summary + list + editor, `/settings`
+CSV export, Supabase client/server + anon-session proxy.
+- **Supabase project `jtracker`** ref `yhepkangpnrcrvetusfy` (region ap-southeast-1),
+  anon sign-ins enabled. Migrations in `supabase/migrations/` (0001 schema+RLS,
+  0002 seed). Apply via Management API (curl; Python UA is Cloudflare-blocked 1010).
+- **Next 15 note:** the top-level convention is `src/proxy.ts` (`export function
+  proxy`), NOT `middleware.ts` (deprecated).
+- **No Vercel deploy yet.** **Next: Phase 2** (dashboard graphs — Recharts/Chart.js).
