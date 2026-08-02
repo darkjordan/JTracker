@@ -4,27 +4,43 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginForm({ errorMessage }: { errorMessage?: string }) {
+  // If a previous *link* attempt failed because the Google account already
+  // belongs to someone, fall back to a normal sign-in on the next tap.
+  const linkedElsewhere =
+    !!errorMessage && /already linked|already been|identity/i.test(errorMessage);
+
   const [status, setStatus] = useState<"idle" | "redirecting">("idle");
   const [error, setError] = useState<string | null>(
     errorMessage
-      ? errorMessage === "auth"
-        ? "Sign-in didn’t complete. Please try again."
-        : errorMessage
+      ? linkedElsewhere
+        ? "That Google account already has a JTracker account — tap to sign in to it."
+        : errorMessage === "auth"
+          ? "Sign-in didn’t complete. Please try again."
+          : errorMessage
       : null
   );
 
-  async function signInWithGoogle() {
+  async function signIn() {
     setStatus("redirecting");
     setError(null);
     const supabase = createClient();
+    const options = { redirectTo: `${window.location.origin}/auth/callback` };
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    const options = { redirectTo: `${window.location.origin}/auth/callback` };
 
-    // If the current session is anonymous, LINK Google to it so the user's
-    // existing transactions are preserved; otherwise a normal sign-in.
-    const { error: authError } = user?.is_anonymous
+    // Link Google to the anonymous session ONLY when it has data worth keeping
+    // and we haven't already found the identity belongs elsewhere. Otherwise a
+    // plain sign-in (which resolves to the existing Google account).
+    let useLink = false;
+    if (user?.is_anonymous && !linkedElsewhere) {
+      const { count } = await supabase
+        .from("transactions")
+        .select("id", { count: "exact", head: true });
+      useLink = (count ?? 0) > 0;
+    }
+
+    const { error: authError } = useLink
       ? await supabase.auth.linkIdentity({ provider: "google", options })
       : await supabase.auth.signInWithOAuth({ provider: "google", options });
 
@@ -38,7 +54,7 @@ export default function LoginForm({ errorMessage }: { errorMessage?: string }) {
     <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
       <button
         type="button"
-        onClick={signInWithGoogle}
+        onClick={signIn}
         disabled={status === "redirecting"}
         className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white py-2.5 font-semibold text-gray-700 transition active:scale-[0.99] hover:bg-gray-50 disabled:opacity-60"
       >
