@@ -1,14 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { listAllTransactions, todayLocal } from "@/lib/api/transactions";
 import { listCategories } from "@/lib/api/categories";
 import { transactionsToCsv, downloadCsv } from "@/lib/csv";
 
+type Account = { email: string | null; anonymous: boolean } | null;
+
 export default function SettingsPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [account, setAccount] = useState<Account>(null);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const loadAccount = useCallback(async () => {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    setAccount(
+      user ? { email: user.email ?? null, anonymous: !!user.is_anonymous } : null
+    );
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      await loadAccount();
+    })();
+  }, [loadAccount]);
 
   async function exportCsv() {
     setBusy(true);
@@ -31,6 +52,14 @@ export default function SettingsPage() {
     }
   }
 
+  async function signOut() {
+    setSigningOut(true);
+    await createClient().auth.signOut();
+    window.location.href = "/"; // proxy creates a fresh anonymous session
+  }
+
+  const signedIn = account && !account.anonymous;
+
   return (
     <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
       <header className="mb-6 flex items-center justify-between">
@@ -42,7 +71,42 @@ export default function SettingsPage() {
         </Link>
       </header>
 
+      {/* Account */}
       <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
+        <h2 className="text-sm font-semibold text-gray-900">Account</h2>
+        {signedIn ? (
+          <>
+            <p className="mt-1 text-xs text-gray-500">Signed in as</p>
+            <p className="truncate text-sm font-medium text-gray-900">
+              {account?.email ?? "Google account"}
+            </p>
+            <button
+              type="button"
+              onClick={signOut}
+              disabled={signingOut}
+              className="mt-3 w-full rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-700 disabled:opacity-50"
+            >
+              {signingOut ? "Signing out…" : "Sign out"}
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="mt-1 text-xs text-gray-500">
+              You’re using JTracker anonymously — your data lives only in this
+              browser. Sign in to keep it and sync across devices.
+            </p>
+            <Link
+              href="/login"
+              className="mt-3 block w-full rounded-xl bg-indigo-600 py-2.5 text-center text-sm font-semibold text-white"
+            >
+              Sign in with Google
+            </Link>
+          </>
+        )}
+      </section>
+
+      {/* Export */}
+      <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
         <h2 className="text-sm font-semibold text-gray-900">Export data</h2>
         <p className="mt-1 text-xs text-gray-500">
           Download all your transactions as a CSV file — your data, anytime.
@@ -59,8 +123,7 @@ export default function SettingsPage() {
       </section>
 
       <p className="mt-6 px-1 text-center text-xs text-gray-400">
-        JTracker · Phase 1 · your data lives in this browser until you sign in
-        (coming soon).
+        JTracker · MYR · your data, your device
       </p>
     </main>
   );
