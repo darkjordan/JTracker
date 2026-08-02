@@ -28,16 +28,23 @@ export default function Dashboard() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [txns, setTxns] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Transaction | null>(null);
 
   const load = useCallback(async () => {
-    const [cats, list] = await Promise.all([
-      listCategories(),
-      listRecentTransactions(),
-    ]);
-    setCategories(cats);
-    setTxns(list);
-    setLoading(false);
+    try {
+      setError(null);
+      const [cats, list] = await Promise.all([
+        listCategories(),
+        listRecentTransactions(),
+      ]);
+      setCategories(cats);
+      setTxns(list);
+    } catch {
+      setError("Couldn’t load your data. Check your connection and retry.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -112,6 +119,20 @@ export default function Dashboard() {
       <section className="mt-5">
         {loading ? (
           <p className="py-10 text-center text-sm text-gray-400">Loading…</p>
+        ) : error ? (
+          <div className="py-10 text-center">
+            <p className="text-sm text-red-600">{error}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setLoading(true);
+                load();
+              }}
+              className="mt-3 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Retry
+            </button>
+          </div>
         ) : txns.length === 0 ? (
           <p className="py-10 text-center text-sm text-gray-500">
             No transactions yet. Add your first above.

@@ -98,4 +98,15 @@ CSV export, Supabase client/server + anon-session proxy.
   0002 seed). Apply via Management API (curl; Python UA is Cloudflare-blocked 1010).
 - **Next 15 note:** the top-level convention is `src/proxy.ts` (`export function
   proxy`), NOT `middleware.ts` (deprecated).
-- **No Vercel deploy yet.** **Next: Phase 2** (dashboard graphs — Recharts/Chart.js).
+- **Light mode only** (dark mode removed from `globals.css`). Dashboard load() has
+  error+retry so it can't hang.
+- **Phone testing over LAN: use a production build** (`next build && next start -H
+  0.0.0.0 -p 3001`). `next dev` over a LAN IP fails — its HMR websocket can't connect
+  and hydration never runs (symptom: stuck on "Loading…"). Verified via Playwright.
+- **Playwright** (devDep) is available for headless/mobile E2E checks.
+- **Plan expanded (2026-08-02)** per Monarch-inspired screenshots — see SPEC §9a + §10:
+  Phase 2 now Dashboard **& Reports** (KPI tiles, savings rate, cash-flow, search/
+  filters/reviewed); new **Phase 6 Accounts & Net Worth** (manual, no bank API),
+  **Phase 7 Recurring & Subscriptions** (detection, zero AI), **Phase 8 Goals**;
+  PWA/i18n/SSO moved to **Phase 9**. Partner-sharing stays OUT (single-user).
+- **No Vercel deploy yet.** **Next: Phase 2** (Dashboard & Reports).

@@ -156,27 +156,52 @@ All charts must render from a single month-window query; do not fetch all histor
 - ❌ Bank API / open banking sync
 - ❌ Budgets, alerts, push notifications
 - ❌ Chat-with-your-finances / AI insights / anomaly detection
-- ❌ Multi-currency, multi-account balances
-- ❌ Shared/household tracking
-- ❌ Recurring transaction auto-generation (v2 candidate)
+- ❌ Bank API / open banking auto-sync — accounts & balances are **manual** (Phase 6)
+- ❌ Multi-currency (MYR only in v1)
+- ❌ Shared / household / partner tracking — JTracker is **single-user** (core decision
+  #5). Monarch's partner-sync is deliberately deferred to a possible v2; adding it means
+  reworking the RLS/ownership model, so it is out of scope for this build.
+- ❌ Recurring transaction **auto-generation** (v2). Note: recurring *detection &
+  tracking* (surfacing subscriptions + upcoming due) **is** in scope — Phase 7.
+- ❌ Budgets & alerts (Monarch has these; not requested, kept out for now)
 - ❌ Receipt line-item breakdown (whole-receipt amount only — this is not JKira)
 - ❌ Payments of any kind — JTracker never touches money movement
 
 When the coding agent proposes any of these mid-build, point it back here.
 
+## 9a. Design language (light, user-friendly)
+
+- **Light mode only.** No dark mode (removed from `globals.css`; `color-scheme: light`).
+  Neutral light-gray app background, white cards, one accent (indigo).
+- **Mobile-first, minimum taps.** The everyday path (quick entry) is one field + one
+  button. Prefer bottom sheets over full pages; large tap targets; tabular-nums for money.
+- **Reference:** the visual clarity of Monarch (net worth card, one clean transaction
+  list, KPI tiles, progress bars) — adapted to a single-user, no-bank-sync, free-tier app.
+- **Phone testing:** serve a **production build** (`next build && next start -H 0.0.0.0`),
+  never `next dev`, over a LAN IP — `next dev`'s HMR websocket can't connect over LAN and
+  blocks hydration (symptom: stuck on "Loading…").
+
 ---
 
 ## 10. Build Phases
 
-**Phase 1 — Money core + manual entry.** `lib/money.ts` (integer sen, formatters), schema migrations for `transactions`/`categories`/`tax_relief_categories`, seed data, RLS, quick-entry local parser, transaction list + editor, CSV export. **Gate:** Vitest green on money lib + text parser (amounts like `8.50`, `RM 8.5`, `1,250.00`, income keyword, no-amount rejection); RLS verified (user B cannot read user A).
+**Phase 1 — Money core + manual entry. ✅ DONE.** `lib/money.ts` (integer sen, formatters), schema migrations for `transactions`/`categories`/`tax_relief_categories`, seed data, RLS, quick-entry local parser, transaction list + editor, CSV export. **Gate (met):** Vitest green on money lib + text parser (amounts like `8.50`, `RM 8.5`, `1,250.00`, income keyword, no-amount rejection); RLS verified (user B cannot read user A).
 
-**Phase 2 — Dashboard & graphs.** Month header card, donut, 6-month trend, sparkline, filters/search. **Gate:** charts render from single-month queries; demoable on a phone.
+**Phase 2 — Dashboard & Reports.** *(expanded — Monarch "Reports / cash flow" + "transactions in one list")* KPI tiles (income · expenses · **net** · **savings rate**); category donut; 6-month income-vs-expense trend + net line; daily sparkline; a **cash-flow breakdown** (income → category groups; a Sankey is a stretch — a stacked/proportional bar is acceptable). Transaction list gains **search** (by merchant), **filters** (type / category / source), and a **"mark reviewed"** toggle (add `reviewed boolean` to `transactions`). **Gate:** every widget renders from a single month-window query; search + filters + reviewed work; demoable on a phone.
 
 **Phase 3 — Screenshot capture.** `parse-capture` edge function (screenshot kind), usage caps, upload/camera UI, review sheet, `merchant_memory` upsert on confirm. **Gate:** TnG receipt, Grab summary, and bank-notification screenshots each parse and save end-to-end; second capture from the same merchant makes zero categorization calls.
 
 **Phase 4 — PDF statement import.** Storage bucket, pdf kind in edge function, reconciliation check, review table with dedupe greying, commit + rollback. **Gate:** importing the same statement twice produces zero duplicate rows; balance mismatch shows warning without blocking.
 
 **Phase 5 — Tax relief.** Relief tagging in all editors, memory-based auto-tag, progress bars, year-end report + CSV. **Gate:** caps editable in Settings; report groups correctly by code and year.
+
+**Phase 6 — Accounts & Net Worth.** *(Monarch "All your accounts, in one place" — but MANUAL, no bank API)* New `accounts` table (`id, user_id, name, kind [cash|bank|ewallet|investment|asset|liability], balance_sen, currency, sort_order`); RLS `user_id = auth.uid()`. Net-worth card = Σ assets − Σ liabilities. Transactions can optionally link to an account (`transactions.account_id`), and a linked account's balance updates on save/delete. Manual "update balance" per account. **Gate:** net worth computes correctly across accounts; balances editable; RLS verified.
+
+**Phase 7 — Recurring & Subscriptions.** *(Monarch "Take control of your subscriptions" — detection only, zero AI)* Client/SQL detection of recurring charges from history (same `merchant_norm`, ~monthly cadence, similar amount); list detected subscriptions with **next due date** + **monthly total**; let the user confirm/dismiss a detected series (store confirmations so detection is stable). No AI, no auto-created transactions. **Gate:** a merchant charged monthly is detected and shows a plausible next-due; dismissed series stay dismissed.
+
+**Phase 8 — Goals.** *(Monarch "Your goals, on track")* New `goals` table (`id, user_id, name, emoji, target_sen, target_date, current_sen`); progress bars (`current / target`), target date, "RM X left". Progress updated manually (optionally linked to an account balance). **Gate:** goals CRUD; progress + remaining compute correctly; RLS verified.
+
+**Phase 9 — PWA + i18n + SSO + polish.** *(was Phase 6; now last)* Manifest with share_target, service worker, offline quick-entry queue, install button, language switcher with full localization (EN/中文/BM), Google SSO + anonymous-account migration, SSO nudge, privacy notice on PDF upload, plus light-mode/UX polish pass. **Gate:** installed app receives a shared screenshot from the gallery; language persists; anonymous data survives sign-in.
 
 **Phase 6 — PWA + i18n + SSO polish.** Manifest with share_target, service worker, offline quick-entry queue, install button, language switcher with full localization, Google SSO + anonymous-account migration, SSO nudge, privacy notice on PDF upload. **Gate:** installed app receives a shared screenshot from the gallery; language persists; anonymous data survives sign-in.
 
