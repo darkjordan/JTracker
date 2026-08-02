@@ -6,6 +6,7 @@ import QuickEntry from "@/components/quick-entry";
 import TransactionEditor from "@/components/transaction-editor";
 import KpiTiles from "@/components/kpi-tiles";
 import CategoryDonut from "@/components/category-donut";
+import { PrivacyToggle, useMoneyPrivacy, mask } from "@/components/money-privacy";
 import { listCategories } from "@/lib/api/categories";
 import { listTransactionsForMonth } from "@/lib/api/transactions";
 import { computeKpis, expenseByCategory, categoryKey } from "@/lib/stats";
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [catFilter, setCatFilter] = useState<string | null>(null);
+  const { hidden } = useMoneyPrivacy();
 
   const load = useCallback(async (y: number, m: number) => {
     try {
@@ -98,9 +100,12 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold tracking-tight text-indigo-700">
           JTracker
         </h1>
-        <Link href="/settings" className="text-sm font-medium text-gray-500">
-          Settings
-        </Link>
+        <div className="flex items-center gap-1">
+          <PrivacyToggle />
+          <Link href="/settings" className="text-sm font-medium text-gray-500">
+            Settings
+          </Link>
+        </div>
       </header>
 
       {/* Month switcher */}
@@ -213,8 +218,9 @@ export default function Dashboard() {
                                   : "text-gray-900"
                               }`}
                             >
-                              {t.type === "income" ? "+" : "−"}
-                              {formatSen(t.amount_sen)}
+                              {hidden
+                                ? mask(true, "")
+                                : `${t.type === "income" ? "+" : "−"}${formatSen(t.amount_sen)}`}
                             </span>
                           </button>
                         </li>
