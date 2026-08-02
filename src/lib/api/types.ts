@@ -23,6 +23,7 @@ export type Transaction = {
   occurred_at: string; // YYYY-MM-DD
   note: string | null;
   source: TxSource;
+  reviewed: boolean;
   created_at: string;
 };
 

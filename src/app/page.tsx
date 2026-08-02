@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import QuickEntry from "@/components/quick-entry";
 import TransactionEditor from "@/components/transaction-editor";
+import TransactionList from "@/components/transaction-list";
+import FilterBar, { type TypeFilter } from "@/components/filter-bar";
 import KpiTiles from "@/components/kpi-tiles";
 import CategoryDonut from "@/components/category-donut";
 import CashFlowBar from "@/components/cash-flow-bar";
@@ -11,7 +13,11 @@ import Sparkline from "@/components/sparkline";
 import TrendChart from "@/components/trend-chart";
 import { PrivacyToggle } from "@/components/money-privacy";
 import { listCategories } from "@/lib/api/categories";
-import { listTransactionsForMonth, listRangeLite } from "@/lib/api/transactions";
+import {
+  listTransactionsForMonth,
+  listRangeLite,
+  setReviewed,
+} from "@/lib/api/transactions";
 import {
   computeKpis,
   expenseByCategory,
@@ -22,21 +28,12 @@ import {
   monthsEndingAt,
   type MonthPoint,
 } from "@/lib/stats";
-import { formatSen } from "@/lib/money";
 import type { Category, Transaction } from "@/lib/api/types";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
 const now = new Date();
 const CUR = { y: now.getFullYear(), m: now.getMonth() + 1 };
-
-function dayLabel(dateStr: string): string {
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-MY", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-}
 
 export default function Dashboard() {
   const [sel, setSel] = useState(CUR); // { y, m } — selected month
@@ -47,6 +44,9 @@ export default function Dashboard() {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [trend, setTrend] = useState<MonthPoint[]>([]);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [reviewedOnly, setReviewedOnly] = useState(false);
 
   const load = useCallback(async (y: number, m: number) => {
     try {
@@ -90,10 +90,30 @@ export default function Dashboard() {
     [txns, sel]
   );
 
-  const shown = useMemo(
-    () => (catFilter ? txns.filter((t) => categoryKey(t) === catFilter) : txns),
-    [txns, catFilter]
-  );
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return txns.filter(
+      (t) =>
+        (typeFilter === "all" || t.type === typeFilter) &&
+        (!catFilter || categoryKey(t) === catFilter) &&
+        (!reviewedOnly || !t.reviewed) &&
+        (!q || t.merchant.toLowerCase().includes(q))
+    );
+  }, [txns, catFilter, typeFilter, reviewedOnly, search]);
+
+  async function toggleReviewed(t: Transaction) {
+    const next = !t.reviewed;
+    setTxns((prev) =>
+      prev.map((x) => (x.id === t.id ? { ...x, reviewed: next } : x))
+    );
+    try {
+      await setReviewed(t.id, next);
+    } catch {
+      setTxns((prev) =>
+        prev.map((x) => (x.id === t.id ? { ...x, reviewed: !next } : x))
+      );
+    }
+  }
   const groups = useMemo(() => {
     const map = new Map<string, Transaction[]>();
     for (const t of shown) {
@@ -115,8 +135,8 @@ export default function Dashboard() {
     setCatFilter(null);
     setSel({ y: Math.floor(idx / 12), m: (idx % 12) + 1 });
   };
-  const filterName =
-    catFilter && (slices.find((s) => s.id === catFilter)?.name ?? "Filtered");
+  const hasFilter =
+    !!catFilter || typeFilter !== "all" || reviewedOnly || search.trim() !== "";
 
   return (
     <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
@@ -199,65 +219,32 @@ export default function Dashboard() {
           </div>
 
           <section className="mt-5">
-            {catFilter && (
-              <button
-                type="button"
-                onClick={() => setCatFilter(null)}
-                className="mb-2 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700"
-              >
-                {filterName} ✕
-              </button>
-            )}
+            <div className="mb-3">
+              <FilterBar
+                search={search}
+                onSearch={setSearch}
+                type={typeFilter}
+                onType={setTypeFilter}
+                category={catFilter}
+                onCategory={setCatFilter}
+                categories={categories}
+                reviewedOnly={reviewedOnly}
+                onReviewedOnly={setReviewedOnly}
+              />
+            </div>
             {shown.length === 0 ? (
               <p className="py-10 text-center text-sm text-gray-500">
-                {catFilter
-                  ? "No transactions in this category."
+                {hasFilter
+                  ? "No transactions match these filters."
                   : "No transactions this month. Add one above."}
               </p>
             ) : (
-              groups.map(([date, rows]) => (
-                <div key={date} className="mb-4">
-                  <p className="px-1 pb-1 text-xs font-medium text-gray-400">
-                    {dayLabel(date)}
-                  </p>
-                  <ul className="divide-y divide-gray-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-                    {rows.map((t) => {
-                      const cat = t.category_id
-                        ? catById.get(t.category_id)
-                        : null;
-                      return (
-                        <li key={t.id}>
-                          <button
-                            type="button"
-                            onClick={() => setEditing(t)}
-                            className="flex w-full items-center gap-3 px-3 py-3 text-left active:bg-gray-50"
-                          >
-                            <span className="text-xl">{cat?.icon ?? "❓"}</span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate font-medium text-gray-900">
-                                {t.merchant || (cat?.name ?? "Uncategorized")}
-                              </span>
-                              <span className="block truncate text-xs text-gray-400">
-                                {cat?.name ?? "Uncategorized"}
-                              </span>
-                            </span>
-                            <span
-                              className={`shrink-0 font-semibold tabular-nums ${
-                                t.type === "income"
-                                  ? "text-emerald-600"
-                                  : "text-gray-900"
-                              }`}
-                            >
-                              {t.type === "income" ? "+" : "−"}
-                              {formatSen(t.amount_sen)}
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))
+              <TransactionList
+                groups={groups}
+                catById={catById}
+                onEdit={setEditing}
+                onToggleReviewed={toggleReviewed}
+              />
             )}
           </section>
         </>

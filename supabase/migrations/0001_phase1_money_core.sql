@@ -51,6 +51,7 @@ create table if not exists public.transactions (
   occurred_at date not null default current_date,
   note text,
   source text not null default 'manual' check (source in ('manual','text','screenshot','pdf')),
+  reviewed boolean not null default false,   -- "mark reviewed" (Phase 2)
   import_id uuid,                -- fk added in Phase 4 (imports)
   dedupe_hash text,
   created_at timestamptz not null default now()

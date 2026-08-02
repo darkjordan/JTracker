@@ -109,4 +109,11 @@ CSV export, Supabase client/server + anon-session proxy.
   filters/reviewed); new **Phase 6 Accounts & Net Worth** (manual, no bank API),
   **Phase 7 Recurring & Subscriptions** (detection, zero AI), **Phase 8 Goals**;
   PWA/i18n/SSO moved to **Phase 9**. Partner-sharing stays OUT (single-user).
-- **No Vercel deploy yet.** **Next: Phase 2** (Dashboard & Reports).
+- **Phase 2 DONE** (Dashboard & Reports). Month switcher + KPI tiles (income/
+  expense/net/savings rate) + category donut (tap-to-filter) + cash-flow bar +
+  daily sparkline + 6-month trend (Recharts) + transaction search/type/category
+  filters + "mark reviewed" (reviewed column). Privacy **eye masks only the KPI
+  tiles**. `lib/stats.ts` pure + unit-tested (24 Vitest total). Verified via
+  Playwright mobile on the prod LAN build.
+- **No Vercel deploy yet.** **Next: Phase 3** (screenshot capture — parse-capture
+  edge function, review sheet, merchant_memory).

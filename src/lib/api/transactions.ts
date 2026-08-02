@@ -3,7 +3,7 @@ import { normalizeMerchant } from "@/lib/money";
 import type { Transaction, NewTransaction } from "./types";
 
 const COLS =
-  "id,type,amount_sen,currency,merchant,merchant_norm,category_id,tax_relief_code,occurred_at,note,source,created_at";
+  "id,type,amount_sen,currency,merchant,merchant_norm,category_id,tax_relief_code,occurred_at,note,source,reviewed,created_at";
 
 /** Local (not UTC) YYYY-MM-DD, so a late-night entry lands on the right day. */
 export function todayLocal(): string {
@@ -98,6 +98,15 @@ export async function updateTransaction(
     p.merchant_norm = normalizeMerchant(patch.merchant);
   }
   const { error } = await supabase.from("transactions").update(p).eq("id", id);
+  if (error) throw error;
+}
+
+export async function setReviewed(id: string, reviewed: boolean): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ reviewed })
+    .eq("id", id);
   if (error) throw error;
 }
 
