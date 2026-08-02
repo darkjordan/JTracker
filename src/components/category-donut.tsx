@@ -2,7 +2,6 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { formatSen } from "@/lib/money";
-import { useMoneyPrivacy, mask } from "@/components/money-privacy";
 import type { CategorySlice } from "@/lib/stats";
 
 // Spending-by-category donut with a tappable legend that filters the list.
@@ -17,7 +16,6 @@ export default function CategoryDonut({
   activeId: string | null;
   onSelect: (id: string | null) => void;
 }) {
-  const { hidden } = useMoneyPrivacy();
   if (slices.length === 0) return null;
   const toggle = (id: string) => onSelect(id === activeId ? null : id);
 
@@ -53,7 +51,7 @@ export default function CategoryDonut({
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-xs text-gray-400">Spent</span>
           <span className="text-xl font-bold tabular-nums text-gray-900">
-            {mask(hidden, formatSen(totalSen))}
+            {formatSen(totalSen)}
           </span>
         </div>
       </div>
@@ -76,7 +74,7 @@ export default function CategoryDonut({
                 {s.icon} {s.name}
               </span>
               <span className="shrink-0 tabular-nums text-gray-600">
-                {mask(hidden, formatSen(s.valueSen))}
+                {formatSen(s.valueSen)}
               </span>
             </button>
           </li>

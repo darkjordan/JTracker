@@ -25,6 +25,25 @@ export async function listRecentTransactions(limit = 200): Promise<Transaction[]
   return (data ?? []) as Transaction[];
 }
 
+/** Light rows over a date range [startISO, endISOExclusive) — for the trend. */
+export async function listRangeLite(
+  startISO: string,
+  endISOExclusive: string
+): Promise<{ type: string; amount_sen: number; occurred_at: string }[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("type, amount_sen, occurred_at")
+    .gte("occurred_at", startISO)
+    .lt("occurred_at", endISOExclusive);
+  if (error) throw error;
+  return (data ?? []) as {
+    type: string;
+    amount_sen: number;
+    occurred_at: string;
+  }[];
+}
+
 export async function listTransactionsForMonth(
   year: number,
   month: number // 1-12

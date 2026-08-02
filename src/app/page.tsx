@@ -6,12 +6,26 @@ import QuickEntry from "@/components/quick-entry";
 import TransactionEditor from "@/components/transaction-editor";
 import KpiTiles from "@/components/kpi-tiles";
 import CategoryDonut from "@/components/category-donut";
-import { PrivacyToggle, useMoneyPrivacy, mask } from "@/components/money-privacy";
+import CashFlowBar from "@/components/cash-flow-bar";
+import Sparkline from "@/components/sparkline";
+import TrendChart from "@/components/trend-chart";
+import { PrivacyToggle } from "@/components/money-privacy";
 import { listCategories } from "@/lib/api/categories";
-import { listTransactionsForMonth } from "@/lib/api/transactions";
-import { computeKpis, expenseByCategory, categoryKey } from "@/lib/stats";
+import { listTransactionsForMonth, listRangeLite } from "@/lib/api/transactions";
+import {
+  computeKpis,
+  expenseByCategory,
+  categoryKey,
+  dailyExpense,
+  cashFlow,
+  bucketMonthly,
+  monthsEndingAt,
+  type MonthPoint,
+} from "@/lib/stats";
 import { formatSen } from "@/lib/money";
 import type { Category, Transaction } from "@/lib/api/types";
+
+const pad = (n: number) => String(n).padStart(2, "0");
 
 const now = new Date();
 const CUR = { y: now.getFullYear(), m: now.getMonth() + 1 };
@@ -32,17 +46,22 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [catFilter, setCatFilter] = useState<string | null>(null);
-  const { hidden } = useMoneyPrivacy();
+  const [trend, setTrend] = useState<MonthPoint[]>([]);
 
   const load = useCallback(async (y: number, m: number) => {
     try {
       setError(null);
-      const [cats, list] = await Promise.all([
+      const months = monthsEndingAt(y, m, 6);
+      const start = `${months[0].y}-${pad(months[0].m)}-01`;
+      const endExcl = m === 12 ? `${y + 1}-01-01` : `${y}-${pad(m + 1)}-01`;
+      const [cats, list, range] = await Promise.all([
         listCategories(),
         listTransactionsForMonth(y, m),
+        listRangeLite(start, endExcl),
       ]);
       setCategories(cats);
       setTxns(list);
+      setTrend(bucketMonthly(range, months));
     } catch {
       setError("Couldn’t load your data. Check your connection and retry.");
     } finally {
@@ -64,6 +83,11 @@ export default function Dashboard() {
   const slices = useMemo(
     () => expenseByCategory(txns, categories),
     [txns, categories]
+  );
+  const cf = useMemo(() => cashFlow(txns, categories), [txns, categories]);
+  const daily = useMemo(
+    () => dailyExpense(txns, sel.y, sel.m),
+    [txns, sel]
   );
 
   const shown = useMemo(
@@ -168,6 +192,12 @@ export default function Dashboard() {
             </div>
           )}
 
+          <div className="mt-4 space-y-4">
+            <CashFlowBar cf={cf} />
+            <Sparkline daily={daily} />
+            <TrendChart points={trend} />
+          </div>
+
           <section className="mt-5">
             {catFilter && (
               <button
@@ -218,9 +248,8 @@ export default function Dashboard() {
                                   : "text-gray-900"
                               }`}
                             >
-                              {hidden
-                                ? mask(true, "")
-                                : `${t.type === "income" ? "+" : "−"}${formatSen(t.amount_sen)}`}
+                              {t.type === "income" ? "+" : "−"}
+                              {formatSen(t.amount_sen)}
                             </span>
                           </button>
                         </li>

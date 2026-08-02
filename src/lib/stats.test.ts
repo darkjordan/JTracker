@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { computeKpis, expenseByCategory } from "./stats";
+import {
+  computeKpis,
+  expenseByCategory,
+  dailyExpense,
+  bucketMonthly,
+  cashFlow,
+  monthsEndingAt,
+} from "./stats";
 import type { Transaction, Category } from "./api/types";
 
 function tx(p: Partial<Transaction>): Transaction {
@@ -68,5 +75,78 @@ describe("expenseByCategory", () => {
       ["Uncategorized", 300],
     ]);
     expect(slices[2].color).toBe("#9aa5b1"); // uncategorized fallback color
+  });
+});
+
+describe("dailyExpense", () => {
+  it("sums expense per day, ignores income, right length", () => {
+    const d = dailyExpense(
+      [
+        tx({ occurred_at: "2026-02-01", amount_sen: 100 }),
+        tx({ occurred_at: "2026-02-01", amount_sen: 50 }),
+        tx({ occurred_at: "2026-02-10", amount_sen: 200 }),
+        tx({ occurred_at: "2026-02-10", type: "income", amount_sen: 9999 }),
+      ],
+      2026,
+      2
+    );
+    expect(d.length).toBe(28); // Feb 2026
+    expect(d[0]).toEqual({ day: 1, sen: 150 });
+    expect(d[9]).toEqual({ day: 10, sen: 200 });
+  });
+});
+
+describe("monthsEndingAt + bucketMonthly", () => {
+  it("lists N months ending at target, crossing a year boundary", () => {
+    expect(monthsEndingAt(2026, 2, 4)).toEqual([
+      { y: 2025, m: 11 },
+      { y: 2025, m: 12 },
+      { y: 2026, m: 1 },
+      { y: 2026, m: 2 },
+    ]);
+  });
+  it("buckets rows into the right months", () => {
+    const months = monthsEndingAt(2026, 2, 3); // Dec, Jan, Feb
+    const pts = bucketMonthly(
+      [
+        { type: "income", amount_sen: 500, occurred_at: "2026-02-05" },
+        { type: "expense", amount_sen: 200, occurred_at: "2026-02-06" },
+        { type: "expense", amount_sen: 100, occurred_at: "2025-12-31" },
+        { type: "expense", amount_sen: 999, occurred_at: "2025-06-01" }, // out of range → ignored
+      ],
+      months
+    );
+    expect(pts.map((p) => [p.key, p.incomeSen, p.expenseSen, p.netSen])).toEqual([
+      ["2025-12", 0, 100, -100],
+      ["2026-01", 0, 0, 0],
+      ["2026-02", 500, 200, 300],
+    ]);
+  });
+});
+
+describe("cashFlow", () => {
+  it("computes income, expense, saved, and segments", () => {
+    const cf = cashFlow(
+      [
+        tx({ type: "income", amount_sen: 100000 }),
+        tx({ category_id: "food", amount_sen: 30000 }),
+        tx({ category_id: "transport", amount_sen: 20000 }),
+      ],
+      cats
+    );
+    expect(cf.incomeSen).toBe(100000);
+    expect(cf.expenseSen).toBe(50000);
+    expect(cf.savedSen).toBe(50000);
+    expect(cf.segments.map((s) => s.name)).toEqual(["Food & Drink", "Transport"]);
+  });
+  it("saved floored at 0 when overspending", () => {
+    const cf = cashFlow(
+      [
+        tx({ type: "income", amount_sen: 100 }),
+        tx({ amount_sen: 500 }),
+      ],
+      cats
+    );
+    expect(cf.savedSen).toBe(0);
   });
 });
