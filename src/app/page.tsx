@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import QuickEntry from "@/components/quick-entry";
+import InstallPrompt from "@/components/install-prompt";
 import TransactionEditor from "@/components/transaction-editor";
 import TransactionList from "@/components/transaction-list";
 import FilterBar, { type TypeFilter } from "@/components/filter-bar";
@@ -151,6 +152,8 @@ export default function Dashboard() {
           </Link>
         </div>
       </header>
+
+      <InstallPrompt />
 
       {/* Month switcher */}
       <div className="mb-3 flex items-center justify-between rounded-2xl bg-white px-2 py-1.5 shadow-sm ring-1 ring-black/5">
