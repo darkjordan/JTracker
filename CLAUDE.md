@@ -123,5 +123,15 @@ CSV export, Supabase client/server + anon-session proxy.
   git-integration — so pushes do **not** auto-deploy; re-run `vercel --prod` (or
   connect the repo in Vercel → Settings → Git for auto-deploy). The Vercel token is
   a secret — never commit it; rotate after use.
+- **PWA + Google SSO LIVE (2026-08-02).** PWA: manifest + JT icons + service
+  worker + install prompt (installable iOS/Android). SSO: `/login` (Continue with
+  Google), `/auth/callback`, anonymous→Google `linkIdentity` (preserves data),
+  Settings Account section (sign out). Supabase Google provider enabled (its own
+  OAuth client `497669363037-ku2s…`, redirect `…/auth/v1/callback`), site_url +
+  allow-list + manual linking set. Verified: authorize 302→accounts.google.com.
+  Consent screen lives in the shared GCP project (project #497669363037) so it may
+  show JKira branding; if it's in "Testing" mode, the signer's email must be a
+  Google **test user**. The Google **secret** lives only in Supabase config, never
+  in the repo.
 - **Next: Phase 3** (screenshot capture — parse-capture edge function, review
-  sheet, merchant_memory).
+  sheet, merchant_memory; needs a Gemini API key).
