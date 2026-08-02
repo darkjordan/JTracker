@@ -138,5 +138,11 @@ CSV export, Supabase client/server + anon-session proxy.
   show JKira branding; if it's in "Testing" mode, the signer's email must be a
   Google **test user**. The Google **secret** lives only in Supabase config, never
   in the repo.
+- **Anonymous-data policy (2026-08-03):** anonymous = ephemeral per-browser
+  session; on sign-in it's upgraded in place via `linkIdentity` (data migrates to
+  the permanent account, nothing copied/orphaned). A `pg_cron` job
+  `purge_stale_anon` (daily 03:00 UTC, see `supabase/migrations/0003_anon_retention.sql`)
+  deletes anonymous users >30d old, or empty ones >1d — so stray anonymous data
+  never accumulates (leak prevention). Deleting an auth user cascades their rows.
 - **Next: Phase 3** (screenshot capture — parse-capture edge function, review
   sheet, merchant_memory; needs a Gemini API key).
