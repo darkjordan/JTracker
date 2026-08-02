@@ -12,6 +12,13 @@ with SPEC.md (especially the "Out of scope" list in §9), point back to it. This
 file holds the working rules; SPEC.md holds the what/why.
 
 ## Non-negotiable rules
+0. **Snapshot before destructive DB ops.** Before any `delete`/`truncate`/
+   destructive migration, run `select backups.take_snapshot();` (or dump the
+   affected rows) first — the Free plan has NO restorable backup/PITR. Nightly
+   snapshots exist (`backups` schema, 14-day JSONB retention, see
+   `supabase/migrations/0004_backups.sql`) but they don't cover the moments
+   between runs. (A wipe of 155 test anon accounts on 2026-08-03 was done without
+   a prior snapshot — don't repeat that on real data.)
 1. **Test end-to-end before EVERY `git push`.** Each phase gate (see SPEC §10) must
    pass: typecheck clean, Vitest green, feature demoable on a phone. For device-only
    paths, say so explicitly and get real-device confirmation before pushing.
