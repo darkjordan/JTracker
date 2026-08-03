@@ -6,16 +6,19 @@ import { createTransaction, todayLocal } from "@/lib/api/transactions";
 import { getMerchantMemory, rememberMerchant } from "@/lib/api/merchant-memory";
 import type { Category, TxType } from "@/lib/api/types";
 import type { ParsedCapture } from "@/lib/capture";
+import type { ReliefRow } from "@/lib/relief";
 
 // Review-before-save sheet for a scanned screenshot (SPEC decision #3).
 export default function CaptureReview({
   parsed,
   categories,
+  reliefs,
   onClose,
   onSaved,
 }: {
   parsed: ParsedCapture;
   categories: Category[];
+  reliefs: ReliefRow[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -30,6 +33,7 @@ export default function CaptureReview({
   );
   const [merchant, setMerchant] = useState(parsed.merchant ?? "");
   const [categoryId, setCategoryId] = useState("");
+  const [reliefCode, setReliefCode] = useState("");
   const [date, setDate] = useState(parsed.date || todayLocal());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +46,7 @@ export default function CaptureReview({
   useEffect(() => {
     (async () => {
       const remembered = await getMerchantMemory(merchantNorm);
+      if (remembered?.tax_relief_code) setReliefCode(remembered.tax_relief_code);
       if (remembered?.category_id) {
         setFromMemory(true);
         setCategoryId(remembered.category_id);
@@ -66,16 +71,18 @@ export default function CaptureReview({
     setBusy(true);
     setError(null);
     try {
+      const relief = type === "expense" ? reliefCode || null : null;
       await createTransaction({
         type,
         amount_sen: sen,
         merchant: merchant.trim() || (type === "income" ? "Income" : "Expense"),
         merchant_norm: merchantNorm,
         category_id: categoryId || null,
+        tax_relief_code: relief,
         occurred_at: date,
         source: "screenshot",
       });
-      await rememberMerchant(merchantNorm, categoryId || null, null);
+      await rememberMerchant(merchantNorm, categoryId || null, relief);
       onSaved();
       onClose();
     } catch {
@@ -135,6 +142,20 @@ export default function CaptureReview({
             </option>
           ))}
         </select>
+
+        {type === "expense" && reliefs.length > 0 && (
+          <>
+            <label className="mt-3 block text-xs text-gray-500">Tax relief (LHDN)</label>
+            <select value={reliefCode} onChange={(e) => setReliefCode(e.target.value)} className={`${field} bg-white`}>
+              <option value="">None</option>
+              {reliefs.map((r) => (
+                <option key={r.code} value={r.code}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
 
         <label className="mt-3 block text-xs text-gray-500">Date</label>
         <input type="date" value={date} max={todayLocal()} onChange={(e) => setDate(e.target.value)} className={field} />

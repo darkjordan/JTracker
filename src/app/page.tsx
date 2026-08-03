@@ -16,6 +16,8 @@ import Sparkline from "@/components/sparkline";
 import TrendChart from "@/components/trend-chart";
 import { PrivacyToggle } from "@/components/money-privacy";
 import { listCategories } from "@/lib/api/categories";
+import { listReliefs } from "@/lib/api/tax-relief";
+import type { ReliefRow } from "@/lib/relief";
 import {
   listTransactionsForMonth,
   listRangeLite,
@@ -47,6 +49,7 @@ export default function Dashboard() {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [trend, setTrend] = useState<MonthPoint[]>([]);
+  const [reliefs, setReliefs] = useState<ReliefRow[]>([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [reviewedOnly, setReviewedOnly] = useState(false);
@@ -57,14 +60,16 @@ export default function Dashboard() {
       const months = monthsEndingAt(y, m, 6);
       const start = `${months[0].y}-${pad(months[0].m)}-01`;
       const endExcl = m === 12 ? `${y + 1}-01-01` : `${y}-${pad(m + 1)}-01`;
-      const [cats, list, range] = await Promise.all([
+      const [cats, list, range, rel] = await Promise.all([
         listCategories(),
         listTransactionsForMonth(y, m),
         listRangeLite(start, endExcl),
+        listReliefs(y),
       ]);
       setCategories(cats);
       setTxns(list);
       setTrend(bucketMonthly(range, months));
+      setReliefs(rel);
     } catch {
       setError("Couldn’t load your data. Check your connection and retry.");
     } finally {
@@ -147,8 +152,11 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold tracking-tight text-indigo-700">
           JTracker
         </h1>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <PrivacyToggle />
+          <Link href="/relief" className="text-sm font-medium text-gray-500">
+            Relief
+          </Link>
           <Link href="/settings" className="text-sm font-medium text-gray-500">
             Settings
           </Link>
@@ -188,7 +196,11 @@ export default function Dashboard() {
         onAdded={() => load(sel.y, sel.m)}
       />
 
-      <ScanButton categories={categories} onSaved={() => load(sel.y, sel.m)} />
+      <ScanButton
+        categories={categories}
+        reliefs={reliefs}
+        onSaved={() => load(sel.y, sel.m)}
+      />
 
       <StatementImport
         categories={categories}
@@ -266,6 +278,7 @@ export default function Dashboard() {
         <TransactionEditor
           txn={editing}
           categories={categories}
+          reliefs={reliefs}
           onClose={() => setEditing(null)}
           onChanged={() => load(sel.y, sel.m)}
           onDeleted={(id) => setTxns((prev) => prev.filter((t) => t.id !== id))}

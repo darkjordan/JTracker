@@ -4,13 +4,16 @@ import { useRef, useState } from "react";
 import { parseScreenshot, type ParsedCapture } from "@/lib/capture";
 import CaptureReview from "./capture-review";
 import type { Category } from "@/lib/api/types";
+import type { ReliefRow } from "@/lib/relief";
 
 // Scan a receipt/screenshot → one AI call → review sheet → save.
 export default function ScanButton({
   categories,
+  reliefs,
   onSaved,
 }: {
   categories: Category[];
+  reliefs: ReliefRow[];
   onSaved: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +56,7 @@ export default function ScanButton({
         <CaptureReview
           parsed={review}
           categories={categories}
+          reliefs={reliefs}
           onClose={() => setReview(null)}
           onSaved={onSaved}
         />

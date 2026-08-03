@@ -1,24 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { parseAmountToSen, formatSen } from "@/lib/money";
+import { parseAmountToSen, formatSen, normalizeMerchant } from "@/lib/money";
 import {
   updateTransaction,
   deleteTransaction,
 } from "@/lib/api/transactions";
+import { rememberMerchant } from "@/lib/api/merchant-memory";
 import type { Category, Transaction, TxType } from "@/lib/api/types";
+import type { ReliefRow } from "@/lib/relief";
 
-// Bottom-sheet editor for a single transaction. Category tagging here; tax-relief
-// tagging is added in Phase 5.
+// Bottom-sheet editor for a single transaction: category + tax-relief tagging.
 export default function TransactionEditor({
   txn,
   categories,
+  reliefs,
   onClose,
   onChanged,
   onDeleted,
 }: {
   txn: Transaction;
   categories: Category[];
+  reliefs: ReliefRow[];
   onClose: () => void;
   onChanged: () => void;
   onDeleted: (id: string) => void;
@@ -27,6 +30,7 @@ export default function TransactionEditor({
   const [amount, setAmount] = useState(formatSen(txn.amount_sen));
   const [merchant, setMerchant] = useState(txn.merchant);
   const [categoryId, setCategoryId] = useState<string>(txn.category_id ?? "");
+  const [reliefCode, setReliefCode] = useState<string>(txn.tax_relief_code ?? "");
   const [date, setDate] = useState(txn.occurred_at);
   const [note, setNote] = useState(txn.note ?? "");
   const [busy, setBusy] = useState(false);
@@ -43,14 +47,20 @@ export default function TransactionEditor({
     setBusy(true);
     setError(null);
     try {
+      const relief = type === "expense" ? reliefCode || null : null;
       await updateTransaction(txn.id, {
         type,
         amount_sen: amountSen,
         merchant,
         category_id: categoryId || null,
+        tax_relief_code: relief,
         occurred_at: date,
         note: note.trim() || null,
       });
+      // Confirming a category/relief teaches merchant memory (R3).
+      if (categoryId || relief) {
+        await rememberMerchant(normalizeMerchant(merchant), categoryId || null, relief);
+      }
       onChanged();
       onClose();
     } catch {
@@ -130,6 +140,26 @@ export default function TransactionEditor({
             </option>
           ))}
         </select>
+
+        {type === "expense" && reliefs.length > 0 && (
+          <>
+            <label className="mt-3 block text-xs text-gray-500">
+              Tax relief (LHDN)
+            </label>
+            <select
+              value={reliefCode}
+              onChange={(e) => setReliefCode(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-base outline-none focus:border-indigo-600"
+            >
+              <option value="">None</option>
+              {reliefs.map((r) => (
+                <option key={r.code} value={r.code}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
 
         <label className="mt-3 block text-xs text-gray-500">Date</label>
         <input
