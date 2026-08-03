@@ -2,15 +2,27 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { formatRM, formatSen } from "@/lib/money";
+import { formatRM, formatSen, parseAmountToSen } from "@/lib/money";
 import { listTransactionsSince } from "@/lib/api/transactions";
 import {
   listDismissed,
   dismissRecurring,
   restoreRecurring,
+  listPlans,
+  createPlan,
+  deletePlan,
 } from "@/lib/api/recurring";
-import { detectRecurring, monthlyTotalSen } from "@/lib/recurring";
+import {
+  detectRecurring,
+  monthlyTotalSen,
+  plansMonthlySen,
+  monthlyEquivalentSen,
+  type RecurringPlan,
+  type Cadence,
+} from "@/lib/recurring";
 import type { Transaction } from "@/lib/api/types";
+
+const CADENCES: Cadence[] = ["weekly", "monthly", "yearly"];
 
 function startEightMonthsAgo(): string {
   const d = new Date();
@@ -23,18 +35,51 @@ function startEightMonthsAgo(): string {
 export default function RecurringPage() {
   const [txns, setTxns] = useState<Transaction[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [plans, setPlans] = useState<RecurringPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  // Add-plan form
+  const [pName, setPName] = useState("");
+  const [pAmount, setPAmount] = useState("");
+  const [pCadence, setPCadence] = useState<Cadence>("monthly");
+  const [pDue, setPDue] = useState("");
+
+  const reloadPlans = useCallback(async () => {
+    setPlans(await listPlans());
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [list, dis] = await Promise.all([
+    const [list, dis, pl] = await Promise.all([
       listTransactionsSince(startEightMonthsAgo()),
       listDismissed(),
+      listPlans(),
     ]);
     setTxns(list);
     setDismissed(dis);
+    setPlans(pl);
     setLoading(false);
   }, []);
+
+  async function addPlan() {
+    const sen = parseAmountToSen(pAmount);
+    if (!pName.trim() || sen === null || sen <= 0) return;
+    await createPlan({
+      name: pName.trim(),
+      amount_sen: sen,
+      cadence: pCadence,
+      next_due: pDue || null,
+    });
+    setPName("");
+    setPAmount("");
+    setPDue("");
+    setPCadence("monthly");
+    await reloadPlans();
+  }
+
+  async function delPlan(id: string) {
+    await deletePlan(id);
+    await reloadPlans();
+  }
 
   useEffect(() => {
     (async () => {
@@ -46,7 +91,10 @@ export default function RecurringPage() {
     () => detectRecurring(txns, dismissed),
     [txns, dismissed]
   );
-  const monthly = useMemo(() => monthlyTotalSen(hits), [hits]);
+  const monthly = useMemo(
+    () => monthlyTotalSen(hits) + plansMonthlySen(plans),
+    [hits, plans]
+  );
 
   // Names of dismissed merchants that would otherwise show (for the restore list).
   const dismissedHits = useMemo(
@@ -79,8 +127,93 @@ export default function RecurringPage() {
       <section className="mb-4 rounded-2xl bg-indigo-600 p-4 text-white shadow-sm">
         <p className="text-xs text-indigo-100">Estimated monthly subscriptions</p>
         <p className="mt-1 text-3xl font-bold tabular-nums">{formatRM(monthly)}</p>
-        <p className="text-xs text-indigo-100">{hits.length} detected</p>
+        <p className="text-xs text-indigo-100">
+          {hits.length} detected · {plans.length} planned
+        </p>
       </section>
+
+      {/* Planned (manual) */}
+      <section className="mb-4 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5">
+        <p className="text-sm font-medium text-gray-900">Plan a recurring item</p>
+        <input
+          type="text"
+          value={pName}
+          onChange={(e) => setPName(e.target.value)}
+          placeholder="Name (e.g. Spotify, rent, insurance)"
+          className="mt-2 w-full rounded-xl border border-gray-300 px-3 py-2.5 text-base outline-none focus:border-indigo-600"
+        />
+        <div className="mt-2 flex gap-2">
+          <div className="flex flex-1 items-center rounded-xl border border-gray-300 px-2 focus-within:border-indigo-600">
+            <span className="mr-1 text-sm text-gray-400">RM</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={pAmount}
+              onChange={(e) => setPAmount(e.target.value)}
+              placeholder="0.00"
+              className="w-full bg-transparent py-2.5 text-base tabular-nums outline-none"
+            />
+          </div>
+          <select
+            value={pCadence}
+            onChange={(e) => setPCadence(e.target.value as Cadence)}
+            className="rounded-xl border border-gray-300 bg-white px-2 py-2.5 text-sm outline-none"
+          >
+            {CADENCES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <label className="text-xs text-gray-400">Next due</label>
+          <input
+            type="date"
+            value={pDue}
+            onChange={(e) => setPDue(e.target.value)}
+            className="flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-600"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={addPlan}
+          disabled={!pName.trim() || !pAmount.trim()}
+          className="mt-2 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          Add plan
+        </button>
+
+        {plans.length > 0 && (
+          <ul className="mt-3 divide-y divide-gray-100">
+            {plans.map((pl) => (
+              <li key={pl.id} className="flex items-center gap-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-900">{pl.name}</p>
+                  <p className="text-xs text-gray-400">
+                    {pl.cadence}
+                    {pl.next_due && ` · next ${pl.next_due}`} ·{" "}
+                    {formatSen(monthlyEquivalentSen(pl.amount_sen, pl.cadence))}/mo
+                  </p>
+                </div>
+                <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900">
+                  {formatSen(pl.amount_sen)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => delPlan(pl.id)}
+                  className="shrink-0 text-gray-300 hover:text-red-500"
+                  aria-label="Delete plan"
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <p className="mb-2 px-1 text-xs font-medium text-gray-400">
+        Detected from your history
+      </p>
 
       {loading ? (
         <p className="py-10 text-center text-sm text-gray-400">Loading…</p>

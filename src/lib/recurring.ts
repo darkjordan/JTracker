@@ -81,3 +81,29 @@ export function detectRecurring(
 export function monthlyTotalSen(hits: RecurringHit[]): number {
   return hits.reduce((a, h) => a + h.amountSen, 0);
 }
+
+// ---- User-planned recurring items ----
+export type Cadence = "weekly" | "monthly" | "yearly";
+
+export type RecurringPlan = {
+  id: string;
+  name: string;
+  amount_sen: number;
+  cadence: Cadence;
+  next_due: string | null;
+  category_id: string | null;
+};
+
+/** Normalize any cadence to a monthly-equivalent amount (for the total). */
+export function monthlyEquivalentSen(amountSen: number, cadence: Cadence): number {
+  if (cadence === "weekly") return Math.round((amountSen * 52) / 12);
+  if (cadence === "yearly") return Math.round(amountSen / 12);
+  return amountSen;
+}
+
+export function plansMonthlySen(plans: RecurringPlan[]): number {
+  return plans.reduce(
+    (a, p) => a + monthlyEquivalentSen(p.amount_sen, p.cadence),
+    0
+  );
+}

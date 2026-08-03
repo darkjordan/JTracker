@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { detectRecurring, monthlyTotalSen, type RecurringTxn } from "./recurring";
+import {
+  detectRecurring,
+  monthlyTotalSen,
+  monthlyEquivalentSen,
+  plansMonthlySen,
+  type RecurringTxn,
+  type RecurringPlan,
+} from "./recurring";
 
 const t = (
   merchant_norm: string,
@@ -58,5 +65,26 @@ describe("detectRecurring", () => {
       t("MAXIS", 8000, "2026-07-15"),
     ]);
     expect(monthlyTotalSen(hits)).toBe(10290);
+  });
+});
+
+describe("planned recurring", () => {
+  const plan = (amount_sen: number, cadence: RecurringPlan["cadence"]): RecurringPlan => ({
+    id: "x",
+    name: "n",
+    amount_sen,
+    cadence,
+    next_due: null,
+    category_id: null,
+  });
+  it("normalizes cadence to a monthly-equivalent", () => {
+    expect(monthlyEquivalentSen(1000, "monthly")).toBe(1000);
+    expect(monthlyEquivalentSen(1200, "yearly")).toBe(100);
+    expect(monthlyEquivalentSen(1000, "weekly")).toBe(4333);
+  });
+  it("plansMonthlySen sums monthly-equivalents", () => {
+    expect(
+      plansMonthlySen([plan(2290, "monthly"), plan(12000, "yearly")])
+    ).toBe(2290 + 1000);
   });
 });
