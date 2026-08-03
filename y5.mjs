@@ -1,0 +1,17 @@
+import { chromium, devices } from "playwright";
+const b = await chromium.launch();
+const p = await b.newContext(devices["iPhone 13"]).then(c=>c.newPage());
+p.on("dialog",d=>d.accept());
+await p.goto("https://jtracker-my.vercel.app/recurring",{waitUntil:"networkidle",timeout:30000});
+await p.waitForSelector("text=Plan a recurring item",{timeout:15000});
+await p.fill('input[placeholder="Name (e.g. Spotify, rent, insurance)"]',"Loan");
+await p.fill('input[placeholder="0.00"]',"500"); await p.fill('input[type=date]',"2026-08-04");
+await p.fill('input[aria-label="Number of payments"]',"3");
+await p.click('button:has-text("Add plan")');
+await p.waitForSelector("text=Upcoming payments",{timeout:10000}); await p.waitForTimeout(1500);
+const y = await p.evaluate(()=>[...document.querySelectorAll('.recharts-yAxis text')].map(e=>e.textContent).filter(Boolean));
+const x = await p.evaluate(()=>[...document.querySelectorAll('.recharts-xAxis text')].map(e=>e.textContent).filter(Boolean));
+console.log("Y ticks:", y.join(", ")||"(none)");
+console.log("X ticks:", x.join(", ")||"(none)");
+await p.locator('li').filter({hasText:"Loan"}).getByRole('button',{name:"Delete plan"}).click();
+await b.close();

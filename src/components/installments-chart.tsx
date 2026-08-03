@@ -22,6 +22,31 @@ function label(monthKey: string): string {
   return m === 1 ? `${mon} '${String(y).slice(2)}` : mon;
 }
 
+const rmAxis = (v: number) =>
+  v >= 1000 ? `${(v / 1000).toFixed(v % 1000 ? 1 : 0)}k` : `${v}`;
+
+// recharts v3 doesn't render default tick <text> reliably here, so draw ticks
+// ourselves as plain SVG text.
+type TickProps = {
+  x?: number;
+  y?: number;
+  payload?: { value: number | string };
+};
+function YTick({ x, y, payload }: TickProps) {
+  return (
+    <text x={x} y={y} dy={3} textAnchor="end" fontSize={10} fill="#9ca3af">
+      {payload ? rmAxis(Number(payload.value)) : ""}
+    </text>
+  );
+}
+function XTick({ x, y, payload }: TickProps) {
+  return (
+    <text x={x} y={(y ?? 0) + 12} textAnchor="middle" fontSize={10} fill="#9ca3af">
+      {payload ? String(payload.value) : ""}
+    </text>
+  );
+}
+
 // One combined chart of all planned recurring payments over a chosen horizon.
 export default function InstallmentsChart({ plans }: { plans: RecurringPlan[] }) {
   const [horizon, setHorizon] = useState(12);
@@ -68,22 +93,19 @@ export default function InstallmentsChart({ plans }: { plans: RecurringPlan[] })
             <CartesianGrid vertical={false} stroke="#f1f1f4" />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 10, fill: "#9ca3af" }}
+              tick={<XTick />}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
+              height={22}
             />
             <YAxis
-              width={44}
+              width={40}
               domain={[0, "auto"]}
               allowDecimals={false}
-              fontSize={10}
-              stroke="#9ca3af"
+              tick={<YTick />}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v: number) =>
-                v >= 1000 ? `${(v / 1000).toFixed(v % 1000 ? 1 : 0)}k` : `${v}`
-              }
             />
             <Tooltip
               formatter={(v) => `RM ${formatSen(Math.round(Number(v) * 100))}`}
