@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
 import type { RecurringPlan, Cadence } from "@/lib/recurring";
 
-const PLAN_COLS = "id, name, amount_sen, cadence, next_due, category_id";
+const PLAN_COLS =
+  "id, name, amount_sen, cadence, next_due, occurrences, paid_count, category_id";
 
 export async function listPlans(): Promise<RecurringPlan[]> {
   const supabase = createClient();
@@ -17,6 +18,7 @@ export async function createPlan(input: {
   amount_sen: number;
   cadence: Cadence;
   next_due: string | null;
+  occurrences?: number | null;
   category_id?: string | null;
 }): Promise<void> {
   const supabase = createClient();
@@ -25,6 +27,7 @@ export async function createPlan(input: {
     amount_sen: input.amount_sen,
     cadence: input.cadence,
     next_due: input.next_due,
+    occurrences: input.occurrences ?? null,
     category_id: input.category_id ?? null,
   });
   if (error) throw error;
@@ -32,7 +35,14 @@ export async function createPlan(input: {
 
 export async function updatePlan(
   id: string,
-  patch: Partial<{ name: string; amount_sen: number; cadence: Cadence; next_due: string | null }>
+  patch: Partial<{
+    name: string;
+    amount_sen: number;
+    cadence: Cadence;
+    next_due: string | null;
+    occurrences: number | null;
+    paid_count: number;
+  }>
 ): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase.from("recurring_plans").update(patch).eq("id", id);

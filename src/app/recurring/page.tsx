@@ -10,16 +10,15 @@ import {
   restoreRecurring,
   listPlans,
   createPlan,
-  deletePlan,
 } from "@/lib/api/recurring";
 import {
   detectRecurring,
   monthlyTotalSen,
   plansMonthlySen,
-  monthlyEquivalentSen,
   type RecurringPlan,
   type Cadence,
 } from "@/lib/recurring";
+import PlanCard from "@/components/plan-card";
 import type { Transaction } from "@/lib/api/types";
 
 const CADENCES: Cadence[] = ["weekly", "monthly", "yearly"];
@@ -42,6 +41,7 @@ export default function RecurringPage() {
   const [pAmount, setPAmount] = useState("");
   const [pCadence, setPCadence] = useState<Cadence>("monthly");
   const [pDue, setPDue] = useState("");
+  const [pTimes, setPTimes] = useState("");
 
   const reloadPlans = useCallback(async () => {
     setPlans(await listPlans());
@@ -63,21 +63,19 @@ export default function RecurringPage() {
   async function addPlan() {
     const sen = parseAmountToSen(pAmount);
     if (!pName.trim() || sen === null || sen <= 0) return;
+    const times = parseInt(pTimes, 10);
     await createPlan({
       name: pName.trim(),
       amount_sen: sen,
       cadence: pCadence,
       next_due: pDue || null,
+      occurrences: Number.isFinite(times) && times > 0 ? times : null,
     });
     setPName("");
     setPAmount("");
     setPDue("");
+    setPTimes("");
     setPCadence("monthly");
-    await reloadPlans();
-  }
-
-  async function delPlan(id: string) {
-    await deletePlan(id);
     await reloadPlans();
   }
 
@@ -172,6 +170,15 @@ export default function RecurringPage() {
             onChange={(e) => setPDue(e.target.value)}
             className="flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-600"
           />
+          <input
+            type="text"
+            inputMode="numeric"
+            value={pTimes}
+            onChange={(e) => setPTimes(e.target.value.replace(/[^0-9]/g, ""))}
+            placeholder="× times"
+            aria-label="Number of payments"
+            className="w-20 rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-600"
+          />
         </div>
         <button
           type="button"
@@ -183,29 +190,9 @@ export default function RecurringPage() {
         </button>
 
         {plans.length > 0 && (
-          <ul className="mt-3 divide-y divide-gray-100">
+          <ul className="mt-3 space-y-2">
             {plans.map((pl) => (
-              <li key={pl.id} className="flex items-center gap-3 py-2">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900">{pl.name}</p>
-                  <p className="text-xs text-gray-400">
-                    {pl.cadence}
-                    {pl.next_due && ` · next ${pl.next_due}`} ·{" "}
-                    {formatSen(monthlyEquivalentSen(pl.amount_sen, pl.cadence))}/mo
-                  </p>
-                </div>
-                <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900">
-                  {formatSen(pl.amount_sen)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => delPlan(pl.id)}
-                  className="shrink-0 text-gray-300 hover:text-red-500"
-                  aria-label="Delete plan"
-                >
-                  ✕
-                </button>
-              </li>
+              <PlanCard key={pl.id} plan={pl} onChanged={reloadPlans} />
             ))}
           </ul>
         )}

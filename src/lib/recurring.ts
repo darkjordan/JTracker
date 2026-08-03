@@ -91,8 +91,91 @@ export type RecurringPlan = {
   amount_sen: number;
   cadence: Cadence;
   next_due: string | null;
+  occurrences: number | null; // total payments; null = ongoing
+  paid_count: number;
   category_id: string | null;
 };
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** Advance an ISO date by n cadence steps (n may be negative). */
+export function addCadence(iso: string, cadence: Cadence, n: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (cadence === "weekly") {
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    dt.setUTCDate(dt.getUTCDate() + 7 * n);
+    return dt.toISOString().slice(0, 10);
+  }
+  if (cadence === "yearly") return `${y + n}-${pad(m)}-${pad(d)}`;
+  // monthly: shift months, clamping the day to the target month's length
+  const total = y * 12 + (m - 1) + n;
+  const ny = Math.floor(total / 12);
+  const nm = (total % 12) + 1;
+  const daysInMonth = new Date(Date.UTC(ny, nm, 0)).getUTCDate();
+  return `${ny}-${pad(nm)}-${pad(Math.min(d, daysInMonth))}`;
+}
+
+export type PlanProgress = {
+  total: number | null; // total payments (occurrences)
+  paid: number;
+  remaining: number | null;
+  totalSen: number | null; // full commitment
+  paidSen: number;
+  startDate: string | null; // first payment
+  endDate: string | null; // last payment (completion)
+};
+
+/** Progress + completion date for a finite plan (null-ish for ongoing plans). */
+export function planProgress(plan: RecurringPlan): PlanProgress {
+  const paid = plan.paid_count ?? 0;
+  const paidSen = paid * plan.amount_sen;
+  if (!plan.occurrences || !plan.next_due) {
+    return {
+      total: plan.occurrences ?? null,
+      paid,
+      remaining: plan.occurrences ? plan.occurrences - paid : null,
+      totalSen: plan.occurrences ? plan.occurrences * plan.amount_sen : null,
+      paidSen,
+      startDate: null,
+      endDate: null,
+    };
+  }
+  // next_due is the next UNPAID payment (#paid+1); back out the start.
+  const startDate = addCadence(plan.next_due, plan.cadence, -paid);
+  const endDate = addCadence(startDate, plan.cadence, plan.occurrences - 1);
+  return {
+    total: plan.occurrences,
+    paid,
+    remaining: plan.occurrences - paid,
+    totalSen: plan.occurrences * plan.amount_sen,
+    paidSen,
+    startDate,
+    endDate,
+  };
+}
+
+export type SchedulePoint = {
+  index: number; // 1-based payment number
+  date: string;
+  cumulativeSen: number;
+  paid: boolean;
+};
+
+/** Full payment schedule for a finite plan (empty for ongoing plans). */
+export function planSchedule(plan: RecurringPlan): SchedulePoint[] {
+  const { startDate } = planProgress(plan);
+  if (!plan.occurrences || !startDate) return [];
+  const out: SchedulePoint[] = [];
+  for (let i = 0; i < plan.occurrences; i++) {
+    out.push({
+      index: i + 1,
+      date: addCadence(startDate, plan.cadence, i),
+      cumulativeSen: (i + 1) * plan.amount_sen,
+      paid: i < (plan.paid_count ?? 0),
+    });
+  }
+  return out;
+}
 
 /** Normalize any cadence to a monthly-equivalent amount (for the total). */
 export function monthlyEquivalentSen(amountSen: number, cadence: Cadence): number {

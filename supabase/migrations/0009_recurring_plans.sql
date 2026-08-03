@@ -8,6 +8,8 @@ create table if not exists public.recurring_plans (
   amount_sen integer not null default 0,
   cadence text not null default 'monthly' check (cadence in ('weekly','monthly','yearly')),
   next_due date,
+  occurrences int,               -- total number of payments; null = ongoing
+  paid_count int not null default 0,
   category_id uuid references public.categories(id) on delete set null,
   created_at timestamptz not null default now()
 );
