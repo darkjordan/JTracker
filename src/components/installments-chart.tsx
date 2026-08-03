@@ -5,6 +5,8 @@ import {
   LineChart,
   Line,
   XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
@@ -62,13 +64,23 @@ export default function InstallmentsChart({ plans }: { plans: RecurringPlan[] })
 
       <div className="mt-2 h-40">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="#f1f1f4" />
             <XAxis
               dataKey="label"
               tick={{ fontSize: 10, fill: "#9ca3af" }}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
+            />
+            <YAxis
+              width={44}
+              tick={{ fontSize: 10, fill: "#9ca3af" }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v: number) =>
+                v >= 1000 ? `${(v / 1000).toFixed(v % 1000 ? 1 : 0)}k` : `${v}`
+              }
             />
             <Tooltip
               formatter={(v) => `RM ${formatSen(Math.round(Number(v) * 100))}`}
