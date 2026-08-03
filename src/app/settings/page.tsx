@@ -7,8 +7,28 @@ import { listAllTransactions, todayLocal } from "@/lib/api/transactions";
 import { listCategories } from "@/lib/api/categories";
 import { transactionsToCsv, downloadCsv } from "@/lib/csv";
 import { listImports, rollbackImport, type ImportRow } from "@/lib/api/imports";
+import { buildLabel } from "@/lib/version";
 
 type Account = { email: string | null; anonymous: boolean } | null;
+
+/**
+ * Drop every cache and re-fetch from the network. An installed PWA can hold a
+ * stale bundle in the HTTP cache long after a deploy, which looks exactly like
+ * a deploy that never happened.
+ */
+async function hardReload() {
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+    const reg = await navigator.serviceWorker?.getRegistration();
+    await reg?.update();
+  } catch {
+    /* best-effort — reload regardless */
+  }
+  window.location.replace(`${window.location.pathname}?r=${Date.now()}`);
+}
 
 export default function SettingsPage() {
   const [busy, setBusy] = useState(false);
@@ -179,6 +199,25 @@ export default function SettingsPage() {
           {busy ? "Preparing…" : "Export CSV"}
         </button>
         {msg && <p className="mt-2 text-xs text-gray-600">{msg}</p>}
+      </section>
+
+      {/* Build stamp — confirms which deployment this browser is actually running. */}
+      <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
+        <h2 className="text-sm font-semibold text-gray-900">Version</h2>
+        <p className="mt-1 text-xs text-gray-500">
+          Compare this against the commit you deployed. If it hasn’t changed
+          after a deploy, this browser is still on the old build.
+        </p>
+        <p className="mt-2 font-mono text-sm tabular-nums text-gray-900">
+          {buildLabel()}
+        </p>
+        <button
+          type="button"
+          onClick={hardReload}
+          className="mt-3 w-full rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-700"
+        >
+          Force refresh
+        </button>
       </section>
 
       <p className="mt-6 px-1 text-center text-xs text-gray-400">
