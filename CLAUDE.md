@@ -190,5 +190,25 @@ CSV export, Supabase client/server + anon-session proxy.
     warned falsely; it now accepts either orientation.
   - **Vitest had no `@/` alias** (`vitest.config.ts`), so anything importing `@/`
     was untestable and uncovered.
+- **Deployment truth (corrected 2026-08-03)** — the earlier "pushes do NOT
+  auto-deploy" note was **wrong**. GitHub git-integration **is** connected:
+  every push to `main` builds and promotes to production automatically
+  (`source: "git"`), and branch pushes build as previews.
+  - **`jtracker-my.vercel.app` is a stale manual alias** and does NOT follow
+    production. It was pinned to a CLI deployment (`d54caf4`) while production
+    had moved two commits ahead — which looked exactly like "the fix didn't
+    deploy". **`jtracker-jcmy.vercel.app` / `jtracker-silk.vercel.app` /
+    `jtracker-git-main-jcmy.vercel.app` do follow production** — prefer those.
+    Re-point the alias with `vercel alias set <prod-deployment> jtracker-my.vercel.app`.
+  - **Verify, don't assume:** Settings → Version shows the build's commit sha,
+    and `curl <url>/version` returns `{sha, builtAt}` (`no-store`). Compare
+    against the commit you expect before concluding a fix didn't ship.
+  - **Vercel dedupes identical SHAs.** Pushing the same commit to a branch and
+    then to `main` builds it once (as the preview) and creates **no** production
+    deployment. Land a new commit on `main` to force a production build.
+  - **Preview deployments 500** on every route: `NEXT_PUBLIC_SUPABASE_URL` /
+    `_ANON_KEY` are set for the **Production environment only**, so `src/proxy.ts`
+    throws "Your project's URL and Key are required to create a Supabase client".
+    Set both for Preview in Vercel → Settings → Environment Variables to fix.
 - **Next: Phase 5** (tax relief — tag transactions with LHDN codes, memory
   auto-tag, progress bars vs editable caps, year-end report + CSV).
