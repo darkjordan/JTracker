@@ -128,11 +128,18 @@ Deno.serve(async (req) => {
   try {
     body = await req.json();
   } catch {
-    return json({ error: "bad request" }, 400);
+    // Almost always an oversized payload truncated in transit, not malformed JSON.
+    return json(
+      { code: "BAD_BODY", error: "That file was too large to send. Try a smaller PDF." },
+      400
+    );
   }
   const kind = body.kind;
-  if ((kind !== "screenshot" && kind !== "statement") || !body.image) {
-    return json({ error: "bad request" }, 400);
+  if (kind !== "screenshot" && kind !== "statement") {
+    return json({ code: "BAD_KIND", error: "bad request" }, 400);
+  }
+  if (!body.image) {
+    return json({ code: "NO_IMAGE", error: "That file came through empty." }, 400);
   }
   const cats = Array.isArray(body.categories) ? body.categories.slice(0, 40) : [];
   const usageKind = kind === "statement" ? "pdf" : "screenshot";

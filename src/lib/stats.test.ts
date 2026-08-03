@@ -22,6 +22,7 @@ function tx(p: Partial<Transaction>): Transaction {
     occurred_at: "2026-08-01",
     note: null,
     source: "manual",
+    reviewed: false,
     created_at: "",
     ...p,
   };

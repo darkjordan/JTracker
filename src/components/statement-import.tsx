@@ -4,8 +4,9 @@ import { useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatSen, formatRM, normalizeMerchant } from "@/lib/money";
 import { todayLocal } from "@/lib/api/transactions";
-import { parseStatement } from "@/lib/capture";
+import { emptyStatementReason, parseStatement } from "@/lib/capture";
 import { dedupeHash } from "@/lib/dedupe";
+import { reconcile } from "@/lib/reconcile";
 import {
   uploadStatement,
   existingHashes,
@@ -18,6 +19,8 @@ type Row = {
   key: number;
   checked: boolean;
   dup: boolean;
+  /** "existing" = imported before; "batch" = the same line twice in this PDF. */
+  dupReason: "existing" | "batch" | null;
   type: TxType;
   amountSen: number;
   merchant: string;
@@ -36,6 +39,20 @@ type Meta = {
 const ACK_KEY = "jtracker:pdfPrivacyAck";
 const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
 
+/** Turn a PostgREST failure into something the user can act on. */
+export function commitErrorMessage(e: unknown): string {
+  const err = e as { message?: string; code?: string } | null;
+  const code = err?.code;
+  const msg = err?.message ?? "";
+  if (code === "23505" || /duplicate key/i.test(msg))
+    return "Some of these transactions are already saved. Close this and import again — the repeats will be greyed out.";
+  if (code === "23514" || /violates check constraint/i.test(msg))
+    return "One of the rows has an amount of zero or is otherwise invalid. Untick it and try again.";
+  if (code === "42501" || /row-level security/i.test(msg))
+    return "Your session expired. Reload the page and sign in again.";
+  return msg ? `Couldn’t import: ${msg}` : "Couldn’t import. Try again.";
+}
+
 export default function StatementImport({
   categories,
   onCommitted,
@@ -51,6 +68,7 @@ export default function StatementImport({
   const [error, setError] = useState<string | null>(null);
   const [committing, setCommitting] = useState(false);
   const [dontShow, setDontShow] = useState(false);
+  const [skipped, setSkipped] = useState(0);
 
   const catName = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
@@ -72,6 +90,7 @@ export default function StatementImport({
     setRows([]);
     setMeta(null);
     setFile(null);
+    setSkipped(0);
     setCommitting(false);
   }
 
@@ -88,28 +107,50 @@ export default function StatementImport({
       setPhase("idle");
       return;
     }
+    const p = res.data;
+    // A schema-valid `rows: []` is the quiet failure mode — the review sheet
+    // would open empty with a disabled Import button and no explanation.
+    if (p.rows.length === 0) {
+      setError(emptyStatementReason(res.pdf));
+      setPhase("idle");
+      return;
+    }
+
     const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     const uid = user?.id ?? "";
-    const p = res.data;
     const end = p.statement_end && isDate(p.statement_end) ? p.statement_end : null;
 
     const norms = p.rows.map((r) => normalizeMerchant(r.description));
     const mem = await getMerchantMemories(norms);
 
     const built: Row[] = [];
+    const seen = new Set<string>();
+    let skippedZero = 0;
     for (let i = 0; i < p.rows.length; i++) {
       const r = p.rows[i];
       const amountSen = Math.round((r.amount || 0) * 100);
+      // transactions.amount_sen is CHECK (amount_sen > 0). Statements carry
+      // RM 0.00 lines (unused cards, reversals) — one of those would abort the
+      // whole insert, so drop them here rather than at the database.
+      if (!Number.isFinite(amountSen) || amountSen <= 0) {
+        skippedZero++;
+        continue;
+      }
       const occurred = isDate(r.date) ? r.date : end || todayLocal();
       const norm = norms[i];
       const hash = await dedupeHash(uid, occurred, amountSen, norm);
+      // (user_id, dedupe_hash) is UNIQUE, so an identical line repeated inside
+      // this one statement cannot be inserted alongside itself either.
+      const dupInBatch = seen.has(hash);
+      seen.add(hash);
       built.push({
         key: i,
-        checked: true,
-        dup: false,
+        checked: !dupInBatch,
+        dup: dupInBatch,
+        dupReason: dupInBatch ? "batch" : null,
         type: r.direction === "credit" ? "income" : "expense",
         amountSen,
         merchant: r.description || "(no description)",
@@ -123,9 +164,11 @@ export default function StatementImport({
     for (const b of built)
       if (existing.has(b.dedupe_hash)) {
         b.dup = true;
+        b.dupReason = "existing";
         b.checked = false;
       }
 
+    setSkipped(skippedZero);
     setRows(built);
     setMeta({
       start: p.statement_start && isDate(p.statement_start) ? p.statement_start : null,
@@ -138,14 +181,18 @@ export default function StatementImport({
 
   const recon = useMemo(() => {
     if (!meta || meta.openingSen === null || meta.closingSen === null) return null;
-    let credit = 0;
-    let debit = 0;
+    let creditSen = 0;
+    let debitSen = 0;
     for (const r of rows) {
-      if (r.type === "income") credit += r.amountSen;
-      else debit += r.amountSen;
+      if (r.type === "income") creditSen += r.amountSen;
+      else debitSen += r.amountSen;
     }
-    const computed = meta.openingSen + credit - debit;
-    return { ok: Math.abs(computed - meta.closingSen) <= 10, computed };
+    return reconcile({
+      openingSen: meta.openingSen,
+      closingSen: meta.closingSen,
+      creditSen,
+      debitSen,
+    });
   }, [rows, meta]);
 
   const newCount = rows.filter((r) => r.checked && !r.dup).length;
@@ -187,8 +234,10 @@ export default function StatementImport({
       );
       onCommitted();
       reset();
-    } catch {
-      setError("Couldn’t import. Try again.");
+    } catch (e) {
+      // Never swallow this: a constraint violation here is silent otherwise,
+      // and "Try again" sends the user round a loop that cannot succeed.
+      setError(commitErrorMessage(e));
       setCommitting(false);
     }
   }
@@ -209,7 +258,19 @@ export default function StatementImport({
         onChange={onFile}
         className="hidden"
       />
-      {error && <p className="mt-1 px-1 text-xs text-red-600">{error}</p>}
+      {error && phase === "idle" && (
+        <div className="mt-2 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2">
+          <p className="flex-1 text-xs leading-relaxed text-red-700">{error}</p>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            aria-label="Dismiss"
+            className="shrink-0 text-red-400"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Privacy notice */}
       {phase === "privacy" && (
@@ -250,13 +311,14 @@ export default function StatementImport({
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-gray-900">Review import</h2>
             <span className="text-xs text-gray-500">
-              {newCount} new{dupCount ? ` · ${dupCount} already imported` : ""}
+              {newCount} new{dupCount ? ` · ${dupCount} duplicate` : ""}
+              {skipped ? ` · ${skipped} zero-value skipped` : ""}
             </span>
           </div>
 
           {recon && !recon.ok && (
             <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              ⚠ Balances don’t reconcile ({formatRM(recon.computed)} vs closing{" "}
+              ⚠ Balances don’t reconcile ({formatRM(recon.computedSen)} vs closing{" "}
               {formatRM(meta.closingSen ?? 0)}). Some rows may be misread — check before saving.
             </p>
           )}
@@ -281,7 +343,8 @@ export default function StatementImport({
                   <p className="truncate text-sm font-medium text-gray-900">{r.merchant}</p>
                   <p className="text-xs text-gray-400">
                     {r.occurred_at}
-                    {r.dup && " · already imported"}
+                    {r.dupReason === "existing" && " · already imported"}
+                    {r.dupReason === "batch" && " · repeated line in this PDF"}
                   </p>
                   {!r.dup && (
                     <select

@@ -170,5 +170,25 @@ CSV export, Supabase client/server + anon-session proxy.
   with import_id + remembers categories; Settings → "Imported statements" → Undo
   (rollback cascades rows + deletes file). Gate verified E2E on live: re-import =
   0 dupes, balance mismatch warns without blocking, commit + rollback work.
+- **Phase 4 hardening (2026-08-03)** — from a real RHB credit-card import:
+  - **PDF preflight** (`src/lib/pdf.ts`, pure + tested): rejects password-protected
+    statements *before* spending an AI call (most MY bank e-statements ship
+    encrypted), plus `looksScanned` (image-per-page; fonts prove nothing — scanner
+    apps stamp a "CamScanner" text watermark). PDF cap 10 MB → **5 MB**: base64 is
+    4/3 the size in one JSON body, and oversize was surfacing as a bare 400.
+  - **`rows: []` is schema-valid**, so an empty parse used to open a review sheet
+    with a disabled button and no explanation. Now explained — the usual cause is
+    importing **page 1 only**, which on a card statement is the summary (balance/
+    limit/due date) and genuinely lists no transactions.
+  - **Commit errors are no longer swallowed.** Two live constraints abort a whole
+    batch insert: `amount_sen > 0` (23514 — statements carry RM 0.00 lines) and
+    `UNIQUE (user_id, dedupe_hash)` (23505 — `existingHashes()` only checked rows
+    already saved, never duplicates *within* the same batch). Both are now filtered
+    client-side and mapped to actionable messages.
+  - **Reconciliation was inverted for credit cards** (`src/lib/reconcile.ts`): a
+    purchase raises what you owe, so `opening + debit − credit`. Every card import
+    warned falsely; it now accepts either orientation.
+  - **Vitest had no `@/` alias** (`vitest.config.ts`), so anything importing `@/`
+    was untestable and uncovered.
 - **Next: Phase 5** (tax relief — tag transactions with LHDN codes, memory
   auto-tag, progress bars vs editable caps, year-end report + CSV).
