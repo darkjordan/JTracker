@@ -57,7 +57,7 @@ All tables have `user_id uuid` referencing the auth user (anonymous or Google), 
 | note | text nullable | |
 | source | text | `manual` \| `text` \| `screenshot` \| `pdf` |
 | import_id | uuid nullable | fk to `imports`, set for pdf rows |
-| dedupe_hash | text | sha1 of `user_id + occurred_at + amount_sen + merchant_norm`; unique index — prevents double-import |
+| dedupe_hash | text | sha1 of `user_id + occurred_at + amount_sen + merchant_norm`, plus `+ "\|#" + n` for the n-th repeat of an identical line within one statement (n=0 omitted, so existing hashes are unchanged); unique index — prevents double-import **without** rejecting a purchase genuinely made twice in a day |
 | created_at | timestamptz | |
 
 ### `categories`

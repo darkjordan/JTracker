@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatSen, formatRM, normalizeMerchant } from "@/lib/money";
 import { todayLocal } from "@/lib/api/transactions";
 import { emptyStatementReason, parseStatement } from "@/lib/capture";
-import { dedupeHash } from "@/lib/dedupe";
+import { dedupeHash, repeatKey } from "@/lib/dedupe";
 import { reconcile } from "@/lib/reconcile";
 import {
   uploadStatement,
@@ -19,8 +19,8 @@ type Row = {
   key: number;
   checked: boolean;
   dup: boolean;
-  /** "existing" = imported before; "batch" = the same line twice in this PDF. */
-  dupReason: "existing" | "batch" | null;
+  /** Only ever "existing" — a repeat within one statement is a real second row. */
+  dupReason: "existing" | null;
   type: TxType;
   amountSen: number;
   merchant: string;
@@ -127,7 +127,7 @@ export default function StatementImport({
     const mem = await getMerchantMemories(norms);
 
     const built: Row[] = [];
-    const seen = new Set<string>();
+    const occurrences = new Map<string, number>();
     let skippedZero = 0;
     for (let i = 0; i < p.rows.length; i++) {
       const r = p.rows[i];
@@ -141,16 +141,17 @@ export default function StatementImport({
       }
       const occurred = isDate(r.date) ? r.date : end || todayLocal();
       const norm = norms[i];
-      const hash = await dedupeHash(uid, occurred, amountSen, norm);
-      // (user_id, dedupe_hash) is UNIQUE, so an identical line repeated inside
-      // this one statement cannot be inserted alongside itself either.
-      const dupInBatch = seen.has(hash);
-      seen.add(hash);
+      // Buying the same thing twice in a day is a real second transaction, so
+      // number the repeats instead of collapsing them — see dedupe.ts.
+      const key = repeatKey(occurred, amountSen, norm);
+      const nth = occurrences.get(key) ?? 0;
+      occurrences.set(key, nth + 1);
+      const hash = await dedupeHash(uid, occurred, amountSen, norm, nth);
       built.push({
         key: i,
-        checked: !dupInBatch,
-        dup: dupInBatch,
-        dupReason: dupInBatch ? "batch" : null,
+        checked: true,
+        dup: false,
+        dupReason: null,
         type: r.direction === "credit" ? "income" : "expense",
         amountSen,
         merchant: r.description || "(no description)",
@@ -344,7 +345,6 @@ export default function StatementImport({
                   <p className="text-xs text-gray-400">
                     {r.occurred_at}
                     {r.dupReason === "existing" && " · already imported"}
-                    {r.dupReason === "batch" && " · repeated line in this PDF"}
                   </p>
                   {!r.dup && (
                     <select
