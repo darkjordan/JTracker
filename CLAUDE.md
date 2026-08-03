@@ -232,8 +232,12 @@ CSV export, Supabase client/server + anon-session proxy.
     **Finite installments** (occurrences + paid_count on `recurring_plans`):
     optional "× times" → `PlanCard` shows Paid X/N, computed **end date**,
     progress bar, **Mark paid** (advances next_due), and an expandable
-    **completion bar chart** (cumulative paid→total by end date). Helpers
-    `addCadence`/`planProgress`/`planSchedule` are pure + tested (86 tests total).
+    **completion bar chart**. Helpers `addCadence`/`planProgress`/`planSchedule`
+    pure + tested. **Mark paid gated to due date** (next_due ≤ today only — no
+    early/double marking); PlanCard **inline Edit** (all fields incl. paid_count);
+    **no × times = ongoing/unlimited**. One **combined InstallmentsChart**
+    (`projectPayments`, tested) projects all planned payments by month with a
+    **horizon selector (3/6/12/18/24m)** + window total. 87 tests total.
   - Dashboard: 3-link nav row (Accounts / Recurring / Relief). Gate verified E2E
     on live (net worth math + edit; Netflix detected + dismiss/restore).
 - **Next: Phase 8** (Goals — savings goals with target/date/progress), then
