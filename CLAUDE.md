@@ -225,7 +225,10 @@ CSV export, Supabase client/server + anon-session proxy.
   - **Recurring** (zero-AI detection): `recurring_dismissed` table + RLS;
     `lib/recurring.ts` (groups expenses by merchant_norm, ~monthly gap 24–35d,
     ≥3 charges → next-due + monthly total, tested); `/recurring` page (detected
-    list, dismiss/restore). Migration 0008.
+    list, dismiss/restore). Migration 0008. **Plus user-planned recurring items**
+    (`recurring_plans` table, migration 0009): add a subscription/bill manually
+    (name, amount, cadence weekly/monthly/yearly, next due); monthly total =
+    detected + planned monthly-equivalents. `/recurring` "Plan a recurring item".
   - Dashboard: 3-link nav row (Accounts / Recurring / Relief). Gate verified E2E
     on live (net worth math + edit; Netflix detected + dismiss/restore).
 - **Next: Phase 8** (Goals — savings goals with target/date/progress), then
