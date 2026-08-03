@@ -116,6 +116,20 @@ export async function deleteTransaction(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** All transactions on/after a date (for recurring detection). */
+export async function listTransactionsSince(
+  startISO: string
+): Promise<Transaction[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select(COLS)
+    .gte("occurred_at", startISO)
+    .order("occurred_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Transaction[];
+}
+
 export async function listAllTransactions(): Promise<Transaction[]> {
   const supabase = createClient();
   const { data, error } = await supabase

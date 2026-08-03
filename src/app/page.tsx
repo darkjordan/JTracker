@@ -154,9 +154,6 @@ export default function Dashboard() {
         </h1>
         <div className="flex items-center gap-2">
           <PrivacyToggle />
-          <Link href="/relief" className="text-sm font-medium text-gray-500">
-            Relief
-          </Link>
           <Link href="/settings" className="text-sm font-medium text-gray-500">
             Settings
           </Link>
@@ -190,6 +187,22 @@ export default function Dashboard() {
       <div className="mb-4">
         <KpiTiles kpis={kpis} />
       </div>
+
+      <nav className="mb-4 grid grid-cols-3 gap-2">
+        {[
+          { href: "/accounts", label: "💰 Accounts" },
+          { href: "/recurring", label: "🔁 Recurring" },
+          { href: "/relief", label: "🎯 Relief" },
+        ].map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className="rounded-xl bg-white py-2 text-center text-xs font-medium text-gray-700 shadow-sm ring-1 ring-black/5 active:scale-[0.98]"
+          >
+            {l.label}
+          </Link>
+        ))}
+      </nav>
 
       <QuickEntry
         categories={categories}
