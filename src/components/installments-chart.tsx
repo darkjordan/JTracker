@@ -77,7 +77,8 @@ export default function InstallmentsChart({ plans }: { plans: RecurringPlan[] })
               width={44}
               domain={[0, "auto"]}
               allowDecimals={false}
-              tick={{ fontSize: 10, fill: "#9ca3af" }}
+              fontSize={10}
+              stroke="#9ca3af"
               axisLine={false}
               tickLine={false}
               tickFormatter={(v: number) =>
