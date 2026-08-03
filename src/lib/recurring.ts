@@ -161,6 +161,50 @@ export type SchedulePoint = {
   paid: boolean;
 };
 
+export type MonthProjection = { month: string; sen: number };
+
+/**
+ * Sum every plan's upcoming payments into monthly buckets for the next
+ * `horizonMonths`, starting at fromISO's month. Finite plans stop when their
+ * remaining payments run out; ongoing plans continue through the horizon.
+ */
+export function projectPayments(
+  plans: RecurringPlan[],
+  horizonMonths: number,
+  fromISO: string
+): MonthProjection[] {
+  const [fy, fm] = fromISO.split("-").map(Number);
+  const startIdx = fy * 12 + (fm - 1);
+  const endIdx = startIdx + horizonMonths - 1;
+  const keys: string[] = [];
+  const buckets = new Map<string, number>();
+  for (let i = 0; i < horizonMonths; i++) {
+    const idx = startIdx + i;
+    const key = `${Math.floor(idx / 12)}-${pad((idx % 12) + 1)}`;
+    keys.push(key);
+    buckets.set(key, 0);
+  }
+  for (const p of plans) {
+    if (!p.next_due) continue;
+    let remaining =
+      p.occurrences != null ? Math.max(0, p.occurrences - (p.paid_count ?? 0)) : Infinity;
+    let date = p.next_due;
+    let guard = 0;
+    while (remaining > 0 && guard++ < 5000) {
+      const [dy, dm] = date.split("-").map(Number);
+      const dIdx = dy * 12 + (dm - 1);
+      if (dIdx > endIdx) break;
+      if (dIdx >= startIdx) {
+        const key = `${dy}-${pad(dm)}`;
+        buckets.set(key, (buckets.get(key) ?? 0) + p.amount_sen);
+      }
+      date = addCadence(date, p.cadence, 1);
+      remaining -= 1;
+    }
+  }
+  return keys.map((k) => ({ month: k, sen: buckets.get(k) ?? 0 }));
+}
+
 /** Full payment schedule for a finite plan (empty for ongoing plans). */
 export function planSchedule(plan: RecurringPlan): SchedulePoint[] {
   const { startDate } = planProgress(plan);

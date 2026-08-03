@@ -19,6 +19,7 @@ import {
   type Cadence,
 } from "@/lib/recurring";
 import PlanCard from "@/components/plan-card";
+import InstallmentsChart from "@/components/installments-chart";
 import type { Transaction } from "@/lib/api/types";
 
 const CADENCES: Cadence[] = ["weekly", "monthly", "yearly"];
@@ -197,6 +198,8 @@ export default function RecurringPage() {
           </ul>
         )}
       </section>
+
+      <InstallmentsChart plans={plans} />
 
       <p className="mb-2 px-1 text-xs font-medium text-gray-400">
         Detected from your history

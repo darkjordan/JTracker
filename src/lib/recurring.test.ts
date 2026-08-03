@@ -7,6 +7,7 @@ import {
   addCadence,
   planProgress,
   planSchedule,
+  projectPayments,
   type RecurringTxn,
   type RecurringPlan,
   type Cadence,
@@ -141,5 +142,30 @@ describe("planProgress + planSchedule", () => {
     const pr = planProgress(mkPlan({ next_due: "2026-08-10" }));
     expect(pr.endDate).toBeNull();
     expect(planSchedule(mkPlan({ next_due: "2026-08-10" }))).toEqual([]);
+  });
+});
+
+describe("projectPayments", () => {
+  it("buckets upcoming payments by month; finite plans stop, ongoing continues", () => {
+    const finite = mkPlan({
+      amount_sen: 50000,
+      cadence: "monthly",
+      next_due: "2026-08-10",
+      occurrences: 3,
+      paid_count: 1, // 2 remaining: Aug, Sep
+    });
+    const ongoing = mkPlan({
+      amount_sen: 1000,
+      cadence: "monthly",
+      next_due: "2026-08-01",
+      occurrences: null, // every month
+    });
+    const proj = projectPayments([finite, ongoing], 4, "2026-08-01");
+    expect(proj.map((m) => [m.month, m.sen])).toEqual([
+      ["2026-08", 51000], // 50000 + 1000
+      ["2026-09", 51000],
+      ["2026-10", 1000], // finite done, ongoing continues
+      ["2026-11", 1000],
+    ]);
   });
 });
