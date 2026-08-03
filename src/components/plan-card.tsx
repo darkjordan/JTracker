@@ -44,11 +44,15 @@ export default function PlanCard({
   async function markPaid() {
     if (!canPay || !plan.next_due) return;
     setBusy(true);
-    await updatePlan(plan.id, {
-      paid_count: (plan.paid_count ?? 0) + 1,
-      next_due: addCadence(plan.next_due, plan.cadence, 1),
-    });
-    onChanged();
+    try {
+      await updatePlan(plan.id, {
+        paid_count: (plan.paid_count ?? 0) + 1,
+        next_due: addCadence(plan.next_due, plan.cadence, 1),
+      });
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
   }
 
   function startEdit() {
@@ -63,24 +67,32 @@ export default function PlanCard({
 
   async function saveEdit() {
     setBusy(true);
-    const times = parseInt(eTimes, 10);
-    await updatePlan(plan.id, {
-      name: eName.trim() || plan.name,
-      amount_sen: parseAmountToSen(eAmount) ?? plan.amount_sen,
-      cadence: eCadence,
-      next_due: eDue || null,
-      occurrences: Number.isFinite(times) && times > 0 ? times : null,
-      paid_count: Math.max(0, parseInt(ePaid, 10) || 0),
-    });
-    setEditing(false);
-    onChanged();
+    try {
+      const times = parseInt(eTimes, 10);
+      await updatePlan(plan.id, {
+        name: eName.trim() || plan.name,
+        amount_sen: parseAmountToSen(eAmount) ?? plan.amount_sen,
+        cadence: eCadence,
+        next_due: eDue || null,
+        occurrences: Number.isFinite(times) && times > 0 ? times : null,
+        paid_count: Math.max(0, parseInt(ePaid, 10) || 0),
+      });
+      setEditing(false);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function remove() {
     if (!confirm(`Delete plan "${plan.name}"?`)) return;
     setBusy(true);
-    await deletePlan(plan.id);
-    onChanged();
+    try {
+      await deletePlan(plan.id);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (

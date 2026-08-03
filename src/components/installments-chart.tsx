@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   Tooltip,
   ResponsiveContainer,
@@ -62,7 +62,7 @@ export default function InstallmentsChart({ plans }: { plans: RecurringPlan[] })
 
       <div className="mt-2 h-40">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
             <XAxis
               dataKey="label"
               tick={{ fontSize: 10, fill: "#9ca3af" }}
@@ -74,8 +74,15 @@ export default function InstallmentsChart({ plans }: { plans: RecurringPlan[] })
               formatter={(v) => `RM ${formatSen(Math.round(Number(v) * 100))}`}
               contentStyle={{ borderRadius: 10, border: "1px solid #eee", fontSize: 12 }}
             />
-            <Bar dataKey="rm" fill="#4f46e5" radius={[2, 2, 0, 0]} isAnimationActive={false} />
-          </BarChart>
+            <Line
+              type="monotone"
+              dataKey="rm"
+              stroke="#4f46e5"
+              strokeWidth={2}
+              dot={{ r: 2, fill: "#4f46e5" }}
+              isAnimationActive={false}
+            />
+          </LineChart>
         </ResponsiveContainer>
       </div>
       <p className="text-center text-[11px] text-gray-400">
