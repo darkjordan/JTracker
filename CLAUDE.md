@@ -217,6 +217,16 @@ CSV export, Supabase client/server + anon-session proxy.
   capture-review, teaches `merchant_memory.tax_relief_code`. `/relief` page:
   year selector, claimed total, per-code progress vs editable caps, CSV report.
   Gate verified E2E on live: tag → report total + row, edit cap → bar recomputes.
-- **Next: Phase 6** (Accounts & Net Worth — manual accounts, per SPEC §10; then
-  Phase 7 Recurring, Phase 8 Goals, Phase 9 i18n polish). NOTE: base PWA + SSO
-  already shipped ahead of the original Phase 9 numbering.
+- **Phase 6 + 7 DONE + LIVE (2026-08-04):**
+  - **Accounts & Net Worth** (manual): `accounts` table + RLS; `lib/networth.ts`
+    (net = assets − liabilities, tested); `/accounts` page (net-worth card, add/
+    edit-balance-inline/delete). No txn↔account auto-balance (deferred; manual
+    balances avoid double-counting).
+  - **Recurring** (zero-AI detection): `recurring_dismissed` table + RLS;
+    `lib/recurring.ts` (groups expenses by merchant_norm, ~monthly gap 24–35d,
+    ≥3 charges → next-due + monthly total, tested); `/recurring` page (detected
+    list, dismiss/restore). Migration 0008.
+  - Dashboard: 3-link nav row (Accounts / Recurring / Relief). Gate verified E2E
+    on live (net worth math + edit; Netflix detected + dismiss/restore).
+- **Next: Phase 8** (Goals — savings goals with target/date/progress), then
+  Phase 9 (i18n EN/中文/BM polish). PWA + Google SSO already shipped.
