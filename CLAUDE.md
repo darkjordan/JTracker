@@ -161,5 +161,14 @@ CSV export, Supabase client/server + anon-session proxy.
   2nd scan same merchant → remembered; 401 no-auth, 400 bad body, usage logged.
   Deploy edge fn via `SUPABASE_ACCESS_TOKEN=<sbp> npx supabase functions deploy
   parse-capture --project-ref yhepkangpnrcrvetusfy` (no Docker needed).
-- **Next: Phase 4** (PDF bank-statement import — pdf kind in parse-capture,
-  reconciliation check, dedupe review, commit/rollback).
+- **Phase 4 DONE + LIVE (2026-08-03):** bank-statement PDF import. `imports`
+  table + `transactions.import_id` cascade FK + private `statements` storage
+  bucket (RLS <uid>/…). Edge fn `statement` kind: one Gemini call → rows
+  {date,description,amount,direction} + opening/closing/period. Client: privacy
+  notice, reconciliation warning (non-blocking), review table (checkboxes +
+  category selects + dedupe greying via sha1 `dedupe_hash`), commit tags rows
+  with import_id + remembers categories; Settings → "Imported statements" → Undo
+  (rollback cascades rows + deletes file). Gate verified E2E on live: re-import =
+  0 dupes, balance mismatch warns without blocking, commit + rollback work.
+- **Next: Phase 5** (tax relief — tag transactions with LHDN codes, memory
+  auto-tag, progress bars vs editable caps, year-end report + CSV).
