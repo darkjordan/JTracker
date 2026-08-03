@@ -210,5 +210,13 @@ CSV export, Supabase client/server + anon-session proxy.
     `_ANON_KEY` are set for the **Production environment only**, so `src/proxy.ts`
     throws "Your project's URL and Key are required to create a Supabase client".
     Set both for Preview in Vercel → Settings → Environment Variables to fix.
-- **Next: Phase 5** (tax relief — tag transactions with LHDN codes, memory
-  auto-tag, progress bars vs editable caps, year-end report + CSV).
+- **Phase 5 DONE + LIVE (2026-08-03):** tax relief. `relief_settings` per-user
+  cap overrides (migration 0007). `lib/relief.ts` pure aggregation (tested).
+  `api/tax-relief.ts`: effective cap = override ?? LHDN default; setReliefCap
+  (null reverts). Relief tagging (expense-only) in transaction-editor +
+  capture-review, teaches `merchant_memory.tax_relief_code`. `/relief` page:
+  year selector, claimed total, per-code progress vs editable caps, CSV report.
+  Gate verified E2E on live: tag → report total + row, edit cap → bar recomputes.
+- **Next: Phase 6** (Accounts & Net Worth — manual accounts, per SPEC §10; then
+  Phase 7 Recurring, Phase 8 Goals, Phase 9 i18n polish). NOTE: base PWA + SSO
+  already shipped ahead of the original Phase 9 numbering.
