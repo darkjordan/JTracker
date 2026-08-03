@@ -100,7 +100,7 @@ Sources: file upload button, camera, or **Web Share Target** (share a screenshot
 - Upload PDF → stored in private bucket → one Gemini call with the full PDF (R1).
 - Prompt returns strict JSON array: `[{ date, description, amount, direction (debit|credit) }]` plus `{ statement_start, statement_end, opening_balance, closing_balance }`.
 - **Reconciliation check (same spirit as JKira's receipt total check):** opening + credits − debits must equal closing. If mismatch, show a warning banner on the review screen — do not block, just flag.
-- **Review table:** every parsed row with checkbox (default on), category (from `merchant_memory` where known, else Uncategorized — do NOT spend AI calls categorizing statement rows individually), inline edit. Rows failing `dedupe_hash` uniqueness are shown greyed-out as "already imported".
+- **Review table:** every parsed row with checkbox (default on), category (from `merchant_memory` where known; otherwise `suggested_category`, which the ONE whole-PDF call already returns per row — do NOT spend a SEPARATE AI call per row. Unrecognised names fall back to Uncategorized), inline edit. Rows failing `dedupe_hash` uniqueness are shown greyed-out as "already imported".
 - Commit writes all checked rows in one insert with `import_id`.
 - An import can be rolled back: deleting an `imports` row cascades its transactions.
 

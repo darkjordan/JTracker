@@ -49,6 +49,10 @@ const STATEMENT_SCHEMA = {
           description: { type: "STRING" },
           amount: { type: "NUMBER" },
           direction: { type: "STRING", enum: ["debit", "credit"] },
+          // Carried in the SAME call that reads the PDF, so categorising a
+          // statement costs no extra AI. SPEC §5 forbids a call PER ROW, which
+          // this is not — 63 rows still cost exactly one call.
+          suggested_category: { type: "STRING" },
         },
         required: ["date", "description", "amount", "direction"],
       },
@@ -77,18 +81,26 @@ function screenshotPrompt(cats: string[]): string {
   ].join("\n");
 }
 
-const STATEMENT_PROMPT = [
-  "This is a Malaysian bank or e-wallet account statement (PDF). Extract EVERY",
-  "transaction line. Return STRICT JSON only.",
-  "- rows: one object per transaction:",
-  "  - date: YYYY-MM-DD",
-  "  - description: the merchant/description text",
-  "  - amount: positive number in Ringgit (no sign)",
-  "  - direction: 'debit' if money left the account, 'credit' if money came in",
-  "- statement_start, statement_end: YYYY-MM-DD of the statement period (or \"\").",
-  "- opening_balance, closing_balance: numbers if shown, else 0.",
-  "Do NOT include summary/subtotal/balance-carried lines as transactions.",
-].join("\n");
+function statementPrompt(cats: string[]): string {
+  return [
+    "This is a Malaysian bank, credit-card or e-wallet statement (PDF). Extract",
+    "EVERY transaction line. Return STRICT JSON only.",
+    "- rows: one object per transaction:",
+    "  - date: YYYY-MM-DD",
+    "  - description: the merchant/description text",
+    "  - amount: positive number in Ringgit (no sign)",
+    "  - direction: 'debit' if money left the account (a card purchase is a debit),",
+    "    'credit' if money came in (a payment or refund to a card is a credit)",
+    cats.length
+      ? `  - suggested_category: EXACTLY one of: ${cats.join(", ")}. Use the merchant name to choose. If none clearly fits, use "".`
+      : '  - suggested_category: "".',
+    "- statement_start, statement_end: YYYY-MM-DD of the statement period (or \"\").",
+    "- opening_balance, closing_balance: numbers if shown, else 0.",
+    "Do NOT include summary/subtotal/balance-carried lines as transactions.",
+    "Never invent a category name that is not in the list — an empty string is",
+    "always better than a guess.",
+  ].join("\n");
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -143,7 +155,7 @@ Deno.serve(async (req) => {
   }
   const cats = Array.isArray(body.categories) ? body.categories.slice(0, 40) : [];
   const usageKind = kind === "statement" ? "pdf" : "screenshot";
-  const prompt = kind === "statement" ? STATEMENT_PROMPT : screenshotPrompt(cats);
+  const prompt = kind === "statement" ? statementPrompt(cats) : screenshotPrompt(cats);
   const schema = kind === "statement" ? STATEMENT_SCHEMA : SCREENSHOT_SCHEMA;
 
   const started = Date.now();

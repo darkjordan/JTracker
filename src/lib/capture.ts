@@ -143,6 +143,8 @@ export type StatementRow = {
   description: string;
   amount: number;
   direction: "debit" | "credit";
+  /** Free text from the model — resolve via matchCategoryId, never trust directly. */
+  suggested_category?: string;
 };
 export type StatementParse = {
   rows: StatementRow[];
@@ -178,8 +180,15 @@ export function emptyStatementReason(pdf: PdfInfo): string {
   return parts.join(" ");
 }
 
-/** Parse a whole bank-statement PDF into rows + balances (one AI call). */
-export async function parseStatement(file: File): Promise<StatementResult> {
+/**
+ * Parse a whole bank-statement PDF into rows + balances (one AI call).
+ * `categoryNames` rides along in that same call so rows come back categorised
+ * without costing anything extra — SPEC §5 bars a call per row, not this.
+ */
+export async function parseStatement(
+  file: File,
+  categoryNames: string[] = []
+): Promise<StatementResult> {
   if (!isPdf(file)) return { ok: false, error: "Please choose a PDF statement." };
   let b64: string;
   let info: PdfInfo;
@@ -191,7 +200,12 @@ export async function parseStatement(file: File): Promise<StatementResult> {
 
   const supabase = createClient();
   const { data, error } = await supabase.functions.invoke("parse-capture", {
-    body: { kind: "statement", image: b64, mimeType: "application/pdf" },
+    body: {
+      kind: "statement",
+      image: b64,
+      mimeType: "application/pdf",
+      categories: categoryNames,
+    },
   });
 
   if (error) {

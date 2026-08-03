@@ -7,6 +7,7 @@ import { todayLocal } from "@/lib/api/transactions";
 import { emptyStatementReason, parseStatement } from "@/lib/capture";
 import { dedupeHash, repeatKey } from "@/lib/dedupe";
 import { reconcile } from "@/lib/reconcile";
+import { matchCategoryId } from "@/lib/category-match";
 import {
   uploadStatement,
   existingHashes,
@@ -101,7 +102,7 @@ export default function StatementImport({
     setError(null);
     setFile(f);
     setPhase("parsing");
-    const res = await parseStatement(f);
+    const res = await parseStatement(f, [...new Set(categories.map((c) => c.name))]);
     if (!res.ok) {
       setError(res.error);
       setPhase("idle");
@@ -147,17 +148,23 @@ export default function StatementImport({
       const nth = occurrences.get(key) ?? 0;
       occurrences.set(key, nth + 1);
       const hash = await dedupeHash(uid, occurred, amountSen, norm, nth);
+      const type: TxType = r.direction === "credit" ? "income" : "expense";
+      // Memory beats the model: a category you confirmed before is a fact,
+      // the suggestion is a guess.
+      const categoryId =
+        mem.get(norm)?.category_id ??
+        matchCategoryId(r.suggested_category, categories, type);
       built.push({
         key: i,
         checked: true,
         dup: false,
         dupReason: null,
-        type: r.direction === "credit" ? "income" : "expense",
+        type,
         amountSen,
         merchant: r.description || "(no description)",
         merchantNorm: norm,
         occurred_at: occurred,
-        categoryId: mem.get(norm)?.category_id ?? "",
+        categoryId,
         dedupe_hash: hash,
       });
     }
