@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { listAllTransactions, todayLocal } from "@/lib/api/transactions";
 import { listCategories } from "@/lib/api/categories";
 import { transactionsToCsv, downloadCsv } from "@/lib/csv";
+import { listImports, rollbackImport, type ImportRow } from "@/lib/api/imports";
 
 type Account = { email: string | null; anonymous: boolean } | null;
 
@@ -14,6 +15,8 @@ export default function SettingsPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [account, setAccount] = useState<Account>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [imports, setImports] = useState<ImportRow[]>([]);
+  const [rollingBack, setRollingBack] = useState<string | null>(null);
 
   const loadAccount = useCallback(async () => {
     const supabase = createClient();
@@ -25,11 +28,31 @@ export default function SettingsPage() {
     );
   }, []);
 
+  const loadImports = useCallback(async () => {
+    try {
+      setImports(await listImports());
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     (async () => {
       await loadAccount();
+      await loadImports();
     })();
-  }, [loadAccount]);
+  }, [loadAccount, loadImports]);
+
+  async function undoImport(imp: ImportRow) {
+    if (!confirm(`Remove this import and its ${imp.txn_count} transactions?`)) return;
+    setRollingBack(imp.id);
+    try {
+      await rollbackImport(imp.id, imp.file_path);
+      await loadImports();
+    } finally {
+      setRollingBack(null);
+    }
+  }
 
   async function exportCsv() {
     setBusy(true);
@@ -104,6 +127,42 @@ export default function SettingsPage() {
           </>
         )}
       </section>
+
+      {/* Imported statements */}
+      {imports.length > 0 && (
+        <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
+          <h2 className="text-sm font-semibold text-gray-900">
+            Imported statements
+          </h2>
+          <p className="mt-1 text-xs text-gray-500">
+            Undo an import to remove all of its transactions.
+          </p>
+          <ul className="mt-2 divide-y divide-gray-100">
+            {imports.map((imp) => (
+              <li key={imp.id} className="flex items-center gap-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-gray-900">
+                    {imp.statement_start && imp.statement_end
+                      ? `${imp.statement_start} → ${imp.statement_end}`
+                      : new Date(imp.created_at).toLocaleDateString("en-MY")}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {imp.txn_count} transaction{imp.txn_count === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => undoImport(imp)}
+                  disabled={rollingBack === imp.id}
+                  className="shrink-0 text-xs font-semibold text-red-600 disabled:opacity-50"
+                >
+                  {rollingBack === imp.id ? "Removing…" : "Undo"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Export */}
       <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">

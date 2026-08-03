@@ -116,3 +116,62 @@ export async function parseScreenshot(
   if (!parsed) return { ok: false, error: "Couldn’t read that image." };
   return { ok: true, parsed };
 }
+
+export type StatementRow = {
+  date: string;
+  description: string;
+  amount: number;
+  direction: "debit" | "credit";
+};
+export type StatementParse = {
+  rows: StatementRow[];
+  statement_start?: string;
+  statement_end?: string;
+  opening_balance?: number;
+  closing_balance?: number;
+};
+export type StatementResult =
+  | { ok: true; data: StatementParse }
+  | { ok: false; error: string; quota?: boolean };
+
+/** Parse a whole bank-statement PDF into rows + balances (one AI call). */
+export async function parseStatement(file: File): Promise<StatementResult> {
+  if (!isPdf(file)) return { ok: false, error: "Please choose a PDF statement." };
+  let b64: string;
+  try {
+    if (file.size > MAX_PDF_BYTES) throw new Error("pdf-too-big");
+    b64 = await pdfToBase64(file);
+  } catch (e) {
+    return {
+      ok: false,
+      error:
+        (e as Error)?.message === "pdf-too-big"
+          ? "That PDF is too large (max 10 MB)."
+          : "Couldn’t read that file.",
+    };
+  }
+
+  const supabase = createClient();
+  const { data, error } = await supabase.functions.invoke("parse-capture", {
+    body: { kind: "statement", image: b64, mimeType: "application/pdf" },
+  });
+
+  if (error) {
+    const ctx = (error as { context?: Response }).context;
+    if (ctx) {
+      try {
+        const b = await ctx.json();
+        if (b?.code === "QUOTA")
+          return { ok: false, quota: true, error: "Daily AI limit reached." };
+        if (b?.error) return { ok: false, error: b.error };
+      } catch {
+        /* fall through */
+      }
+    }
+    return { ok: false, error: "Import failed. Try again." };
+  }
+
+  const parsed = (data as { parsed?: StatementParse })?.parsed;
+  if (!parsed?.rows) return { ok: false, error: "Couldn’t read that statement." };
+  return { ok: true, data: parsed };
+}

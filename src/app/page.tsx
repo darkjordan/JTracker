@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import QuickEntry from "@/components/quick-entry";
 import ScanButton from "@/components/scan-button";
+import StatementImport from "@/components/statement-import";
 import InstallPrompt from "@/components/install-prompt";
 import TransactionEditor from "@/components/transaction-editor";
 import TransactionList from "@/components/transaction-list";
@@ -188,6 +189,11 @@ export default function Dashboard() {
       />
 
       <ScanButton categories={categories} onSaved={() => load(sel.y, sel.m)} />
+
+      <StatementImport
+        categories={categories}
+        onCommitted={() => load(sel.y, sel.m)}
+      />
 
       {loading ? (
         <p className="py-10 text-center text-sm text-gray-400">Loading…</p>

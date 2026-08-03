@@ -19,6 +19,27 @@ export async function getMerchantMemory(
   return (data as MerchantMemory) ?? null;
 }
 
+/** Bulk lookup for many merchants at once (for statement import). */
+export async function getMerchantMemories(
+  norms: string[]
+): Promise<Map<string, MerchantMemory>> {
+  const unique = [...new Set(norms.filter(Boolean))];
+  if (unique.length === 0) return new Map();
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("merchant_memory")
+    .select("merchant_norm, category_id, tax_relief_code")
+    .in("merchant_norm", unique);
+  const map = new Map<string, MerchantMemory>();
+  for (const r of (data ?? []) as (MerchantMemory & { merchant_norm: string })[]) {
+    map.set(r.merchant_norm, {
+      category_id: r.category_id,
+      tax_relief_code: r.tax_relief_code,
+    });
+  }
+  return map;
+}
+
 /** Remember (or update) a merchant's category/relief for next time. */
 export async function rememberMerchant(
   merchantNorm: string,

@@ -1,7 +1,9 @@
 // parse-capture — the ONLY place JTracker calls AI (SPEC §8).
-// Screenshot in → Gemini vision (one call) → strict JSON out. Enforces a
-// per-user daily cap (server-authoritative via service role) and logs every
-// call. It NEVER writes transactions; the client commits after user review.
+// Two modes, one AI call each:
+//   kind:"screenshot" → one transaction from a receipt/screenshot/PDF receipt
+//   kind:"statement"  → all transactions from a whole bank-statement PDF
+// Enforces a per-user daily cap (server-authoritative) and logs every call.
+// It NEVER writes transactions; the client commits after user review.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -22,18 +24,71 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const RESPONSE_SCHEMA = {
+const SCREENSHOT_SCHEMA = {
   type: "OBJECT",
   properties: {
     type: { type: "STRING", enum: ["income", "expense"] },
     amount: { type: "NUMBER" },
     merchant: { type: "STRING" },
-    date: { type: "STRING" }, // YYYY-MM-DD, or "" if not visible
+    date: { type: "STRING" },
     suggested_category: { type: "STRING" },
     confidence: { type: "NUMBER" },
   },
   required: ["type", "amount", "merchant"],
 };
+
+const STATEMENT_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    rows: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          date: { type: "STRING" },
+          description: { type: "STRING" },
+          amount: { type: "NUMBER" },
+          direction: { type: "STRING", enum: ["debit", "credit"] },
+        },
+        required: ["date", "description", "amount", "direction"],
+      },
+    },
+    statement_start: { type: "STRING" },
+    statement_end: { type: "STRING" },
+    opening_balance: { type: "NUMBER" },
+    closing_balance: { type: "NUMBER" },
+  },
+  required: ["rows"],
+};
+
+function screenshotPrompt(cats: string[]): string {
+  return [
+    "Extract ONE transaction from a Malaysian payment screenshot/receipt (Touch 'n Go,",
+    "GrabPay/Grab, DuitNow transfer, a banking-app notification, or a paper receipt).",
+    "Return STRICT JSON only.",
+    "- type: 'expense' unless money was clearly RECEIVED by the user (then 'income').",
+    "- amount: transaction total, positive number in Ringgit.",
+    "- merchant: payee/merchant or sender name, concise.",
+    "- date: YYYY-MM-DD if visible, else \"\".",
+    cats.length
+      ? `- suggested_category: closest of: ${cats.join(", ")}.`
+      : "- suggested_category: a short category name.",
+    "- confidence: 0..1.",
+  ].join("\n");
+}
+
+const STATEMENT_PROMPT = [
+  "This is a Malaysian bank or e-wallet account statement (PDF). Extract EVERY",
+  "transaction line. Return STRICT JSON only.",
+  "- rows: one object per transaction:",
+  "  - date: YYYY-MM-DD",
+  "  - description: the merchant/description text",
+  "  - amount: positive number in Ringgit (no sign)",
+  "  - direction: 'debit' if money left the account, 'credit' if money came in",
+  "- statement_start, statement_end: YYYY-MM-DD of the statement period (or \"\").",
+  "- opening_balance, closing_balance: numbers if shown, else 0.",
+  "Do NOT include summary/subtotal/balance-carried lines as transactions.",
+].join("\n");
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -42,9 +97,7 @@ Deno.serve(async (req) => {
   const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY");
   if (!GEMINI_KEY) return json({ error: "not configured" }, 503);
 
-  // --- Auth: validate the caller's JWT (anonymous is fine) ---
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const token = authHeader.replace("Bearer ", "");
+  const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -55,7 +108,6 @@ Deno.serve(async (req) => {
   } = await admin.auth.getUser(token);
   if (userErr || !user) return json({ error: "unauthorized" }, 401);
 
-  // --- Daily cap (server-authoritative) ---
   const since = new Date();
   since.setUTCHours(0, 0, 0, 0);
   const { count } = await admin
@@ -67,7 +119,6 @@ Deno.serve(async (req) => {
     return json({ code: "QUOTA", error: "Daily AI limit reached" }, 429);
   }
 
-  // --- Input ---
   let body: {
     kind?: string;
     image?: string;
@@ -79,24 +130,14 @@ Deno.serve(async (req) => {
   } catch {
     return json({ error: "bad request" }, 400);
   }
-  if (body.kind !== "screenshot" || !body.image) {
+  const kind = body.kind;
+  if ((kind !== "screenshot" && kind !== "statement") || !body.image) {
     return json({ error: "bad request" }, 400);
   }
   const cats = Array.isArray(body.categories) ? body.categories.slice(0, 40) : [];
-
-  const prompt = [
-    "You are extracting ONE transaction from a Malaysian payment screenshot or receipt",
-    "(Touch 'n Go eWallet, GrabPay/Grab, DuitNow transfer, a banking-app notification,",
-    "or a photo of a paper receipt). Return STRICT JSON only.",
-    "- type: 'expense' unless it's clearly money RECEIVED by the user (then 'income').",
-    "- amount: the transaction total as a positive number in Ringgit (e.g. 12.90).",
-    "- merchant: the payee/merchant or sender name, concise.",
-    "- date: the transaction date as YYYY-MM-DD if visible, else \"\".",
-    cats.length
-      ? `- suggested_category: choose the closest from this list: ${cats.join(", ")}.`
-      : "- suggested_category: a short category name.",
-    "- confidence: 0..1.",
-  ].join("\n");
+  const usageKind = kind === "statement" ? "pdf" : "screenshot";
+  const prompt = kind === "statement" ? STATEMENT_PROMPT : screenshotPrompt(cats);
+  const schema = kind === "statement" ? STATEMENT_SCHEMA : SCREENSHOT_SCHEMA;
 
   const started = Date.now();
   let ok = true;
@@ -107,20 +148,12 @@ Deno.serve(async (req) => {
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": GEMINI_KEY,
-        },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY },
         body: JSON.stringify({
           contents: [
             {
               parts: [
-                {
-                  inline_data: {
-                    mime_type: body.mimeType || "image/jpeg",
-                    data: body.image,
-                  },
-                },
+                { inline_data: { mime_type: body.mimeType || "image/jpeg", data: body.image } },
                 { text: prompt },
               ],
             },
@@ -128,13 +161,13 @@ Deno.serve(async (req) => {
           generationConfig: {
             temperature: 0,
             responseMimeType: "application/json",
-            responseSchema: RESPONSE_SCHEMA,
+            responseSchema: schema,
           },
         }),
       }
     );
     if (gRes.status === 429) {
-      await admin.from("ai_usage").insert({ user_id: user.id, kind: "screenshot", ok: false, latency_ms: Date.now() - started });
+      await admin.from("ai_usage").insert({ user_id: user.id, kind: usageKind, ok: false, latency_ms: Date.now() - started });
       return json({ code: "QUOTA", error: "AI is busy, try again or enter manually" }, 429);
     }
     const gJson = await gRes.json();
@@ -146,13 +179,13 @@ Deno.serve(async (req) => {
 
   await admin.from("ai_usage").insert({
     user_id: user.id,
-    kind: "screenshot",
+    kind: usageKind,
     ok,
     latency_ms: Date.now() - started,
   });
 
   if (!ok || !parsed) {
-    return json({ error: "Couldn’t read that image. Enter it manually." }, 422);
+    return json({ error: "Couldn’t read that file. Enter it manually." }, 422);
   }
   return json({ parsed, raw_model_output: raw });
 });
