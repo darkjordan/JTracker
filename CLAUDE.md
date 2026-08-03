@@ -229,6 +229,11 @@ CSV export, Supabase client/server + anon-session proxy.
     (`recurring_plans` table, migration 0009): add a subscription/bill manually
     (name, amount, cadence weekly/monthly/yearly, next due); monthly total =
     detected + planned monthly-equivalents. `/recurring` "Plan a recurring item".
+    **Finite installments** (occurrences + paid_count on `recurring_plans`):
+    optional "× times" → `PlanCard` shows Paid X/N, computed **end date**,
+    progress bar, **Mark paid** (advances next_due), and an expandable
+    **completion bar chart** (cumulative paid→total by end date). Helpers
+    `addCadence`/`planProgress`/`planSchedule` are pure + tested (86 tests total).
   - Dashboard: 3-link nav row (Accounts / Recurring / Relief). Gate verified E2E
     on live (net worth math + edit; Netflix detected + dismiss/restore).
 - **Next: Phase 8** (Goals — savings goals with target/date/progress), then
