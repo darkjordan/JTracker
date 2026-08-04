@@ -21,7 +21,7 @@ export function memberBadges(
   sorted.forEach((m, i) => {
     map.set(m.user_id, {
       color: PALETTE[i % PALETTE.length],
-      label: m.email ? m.email.split("@")[0] : "Member",
+      label: m.email && m.email.includes("@") ? m.email.split("@")[0] : "Member",
     });
   });
   return map;

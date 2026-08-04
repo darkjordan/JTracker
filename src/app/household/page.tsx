@@ -157,7 +157,7 @@ export default function HouseholdPage() {
               {household.members.map((m) => (
                 <li key={m.user_id} className="flex items-center justify-between py-2 text-sm">
                   <span className="truncate text-gray-900">
-                    {m.email ?? "Member"}
+                    {m.email || "Anonymous (not signed in)"}
                     {m.user_id === me?.id && <span className="text-gray-400"> · you</span>}
                   </span>
                   <span className="text-xs text-gray-400 capitalize">{m.role}</span>

@@ -14,6 +14,8 @@ export type Household = {
 /** The caller's household (with members), or null if they're not in one. */
 export async function getHousehold(): Promise<Household | null> {
   const supabase = createClient();
+  // Keep the caller's stored email current (e.g. after they sign in post-join).
+  await supabase.rpc("sync_household_email");
   const { data: hh } = await supabase
     .from("households")
     .select("id, name")
