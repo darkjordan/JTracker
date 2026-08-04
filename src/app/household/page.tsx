@@ -9,6 +9,9 @@ import {
   createInviteUrl,
   joinHousehold,
   leaveHousehold,
+  approveMember,
+  rejectMember,
+  removeMember,
   type Household,
 } from "@/lib/api/household";
 
@@ -18,6 +21,7 @@ export default function HouseholdPage() {
   const [loading, setLoading] = useState(true);
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [name, setName] = useState("");
 
@@ -79,7 +83,7 @@ export default function HouseholdPage() {
       setInviteToken(null);
       window.history.replaceState(null, "", "/household");
       await load();
-      setMsg("Joined! Your finances are now shared.");
+      setMsg("Request sent — waiting for the owner to approve you.");
     } catch {
       setMsg("That invite is invalid or expired.");
     } finally {
@@ -98,8 +102,43 @@ export default function HouseholdPage() {
     }
   }
 
-  const inThisHousehold =
-    !!inviteToken && !!household; // already in a household when an invite is open
+  async function doApprove(userId: string) {
+    setBusyId(userId);
+    try {
+      await approveMember(userId);
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function doReject(userId: string) {
+    setBusyId(userId);
+    try {
+      await rejectMember(userId);
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function doRemove(userId: string, label: string) {
+    if (!confirm(`Remove ${label} from the household?`)) return;
+    setBusyId(userId);
+    try {
+      await removeMember(userId);
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const inThisHousehold = !!inviteToken && !!household;
+  const myMembership = household?.members.find((m) => m.user_id === me?.id);
+  const isOwner = myMembership?.role === "owner";
+  const iAmPending = myMembership?.status === "pending";
+  const active = household?.members.filter((m) => m.status === "active") ?? [];
+  const pending = household?.members.filter((m) => m.status === "pending") ?? [];
 
   return (
     <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
@@ -108,15 +147,15 @@ export default function HouseholdPage() {
         <Link href="/" className="text-sm font-medium text-indigo-600">Done</Link>
       </header>
 
-      {/* Pending invite */}
-      {inviteToken && (
+      {/* Pending invite (opened a fresh invite link) */}
+      {inviteToken && !inThisHousehold && (
         <section className="mb-4 rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-200">
           <p className="text-sm font-medium text-indigo-900">
             You’ve been invited to a household
           </p>
           <p className="mt-1 text-xs text-indigo-700">
-            Joining <b>merges your data into the shared household</b> — all members
-            can see and edit everything.
+            The owner must <b>approve</b> your request before you see or edit
+            the shared finances.
           </p>
           {me?.anon ? (
             <>
@@ -138,7 +177,7 @@ export default function HouseholdPage() {
               disabled={busy}
               className="mt-3 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {busy ? "Joining…" : inThisHousehold ? "Switch to this household" : "Join household"}
+              {busy ? "Requesting…" : "Request to join"}
             </button>
           )}
         </section>
@@ -148,47 +187,108 @@ export default function HouseholdPage() {
         <p className="py-10 text-center text-sm text-gray-400">Loading…</p>
       ) : household ? (
         <>
+          {/* Pending-approval waiting state for the requester themselves */}
+          {iAmPending && (
+            <section className="mb-4 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
+              <p className="text-sm font-medium text-amber-900">
+                Waiting for approval
+              </p>
+              <p className="mt-1 text-xs text-amber-700">
+                Your request to join <b>{household.name}</b> is pending. You can
+                keep using JTracker on your own until the owner approves you.
+              </p>
+            </section>
+          )}
+
+          {/* Owner: pending join requests */}
+          {isOwner && pending.length > 0 && (
+            <section className="mb-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Join requests ({pending.length})
+              </h2>
+              <ul className="mt-2 divide-y divide-gray-100">
+                {pending.map((m) => (
+                  <li key={m.user_id} className="flex items-center justify-between gap-2 py-2">
+                    <span className="min-w-0 flex-1 truncate text-sm text-gray-900">
+                      {m.email || "Anonymous"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => doReject(m.user_id)}
+                      disabled={busyId === m.user_id}
+                      className="shrink-0 rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-600 disabled:opacity-50"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => doApprove(m.user_id)}
+                      disabled={busyId === m.user_id}
+                      className="shrink-0 rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                    >
+                      Approve
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
             <h2 className="text-sm font-semibold text-gray-900">{household.name}</h2>
             <p className="mt-1 text-xs text-gray-500">
-              {household.members.length} member{household.members.length === 1 ? "" : "s"} · everyone shares all finances
+              {active.length} member{active.length === 1 ? "" : "s"} · everyone shares all finances
             </p>
             <ul className="mt-3 divide-y divide-gray-100">
-              {household.members.map((m) => (
-                <li key={m.user_id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="truncate text-gray-900">
+              {active.map((m) => (
+                <li key={m.user_id} className="flex items-center gap-2 py-2 text-sm">
+                  <span className="min-w-0 flex-1 truncate text-gray-900">
                     {m.email || "Anonymous (not signed in)"}
                     {m.user_id === me?.id && <span className="text-gray-400"> · you</span>}
                   </span>
-                  <span className="text-xs text-gray-400 capitalize">{m.role}</span>
+                  <span className="shrink-0 text-xs text-gray-400 capitalize">{m.role}</span>
+                  {isOwner && m.user_id !== me?.id && (
+                    <button
+                      type="button"
+                      onClick={() => doRemove(m.user_id, m.email || "this member")}
+                      disabled={busyId === m.user_id}
+                      className="shrink-0 text-xs font-medium text-red-500 disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
           </section>
 
-          <button
-            type="button"
-            onClick={doInvite}
-            disabled={busy}
-            className="mt-4 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            Invite someone (share link)
-          </button>
+          {isOwner && (
+            <button
+              type="button"
+              onClick={doInvite}
+              disabled={busy}
+              className="mt-4 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              Invite someone (share link)
+            </button>
+          )}
           <button
             type="button"
             onClick={doLeave}
             disabled={busy}
             className="mt-2 w-full rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-600 disabled:opacity-50"
           >
-            Leave household
+            {iAmPending ? "Cancel request" : "Leave household"}
           </button>
         </>
       ) : (
         <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
           <h2 className="text-sm font-semibold text-gray-900">Share with your family</h2>
           <p className="mt-1 text-xs text-gray-500">
-            Create a household and invite others. All members see and edit the same
-            transactions, accounts, goals, and tax relief. {me?.anon && "Sign in with Google first so it syncs across devices."}
+            Create a household and invite others. As owner, you approve who joins.
+            All approved members see and edit the same transactions, accounts,
+            goals, and tax relief.{" "}
+            {me?.anon && "Sign in with Google first so it syncs across devices."}
           </p>
           <input
             type="text"
@@ -211,7 +311,8 @@ export default function HouseholdPage() {
       {msg && <p className="mt-3 text-center text-xs text-gray-600">{msg}</p>}
 
       <p className="mt-6 px-1 text-center text-[11px] text-gray-400">
-        Fully shared: household members can see & edit all of the household’s data.
+        Fully shared: approved household members can see & edit all of the
+        household’s data. The owner approves joins and can remove members.
       </p>
     </main>
   );

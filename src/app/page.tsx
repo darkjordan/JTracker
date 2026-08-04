@@ -75,9 +75,11 @@ export default function Dashboard() {
       setTxns(list);
       setTrend(bucketMonthly(range, months));
       setReliefs(rel);
-      // Only tag transactions by member when actually sharing (>1 member).
+      // Only tag transactions by member when actually sharing with >1 APPROVED
+      // member — pending requesters have no shared data yet.
+      const activeMembers = hh?.members.filter((m) => m.status === "active") ?? [];
       setMemberMap(
-        hh && hh.members.length > 1 ? memberBadges(hh.members) : new Map()
+        activeMembers.length > 1 ? memberBadges(activeMembers) : new Map()
       );
     } catch {
       setError("Couldn’t load your data. Check your connection and retry.");

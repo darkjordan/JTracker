@@ -4,6 +4,7 @@ export type HouseholdMember = {
   user_id: string;
   role: "owner" | "member";
   email: string | null;
+  status: "pending" | "active";
 };
 export type Household = {
   id: string;
@@ -24,7 +25,7 @@ export async function getHousehold(): Promise<Household | null> {
   if (!hh) return null;
   const { data: members } = await supabase
     .from("household_members")
-    .select("user_id, role, email")
+    .select("user_id, role, email, status")
     .eq("household_id", hh.id);
   return {
     id: hh.id,
@@ -57,5 +58,26 @@ export async function joinHousehold(token: string): Promise<void> {
 export async function leaveHousehold(): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase.rpc("leave_household");
+  if (error) throw error;
+}
+
+/** Owner only: approve a pending join request. */
+export async function approveMember(userId: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("approve_member", { p_user_id: userId });
+  if (error) throw error;
+}
+
+/** Owner only: reject (delete) a pending join request. */
+export async function rejectMember(userId: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("reject_member", { p_user_id: userId });
+  if (error) throw error;
+}
+
+/** Owner only: remove an active member from the household. */
+export async function removeMember(userId: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("remove_member", { p_user_id: userId });
   if (error) throw error;
 }
