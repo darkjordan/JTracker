@@ -240,5 +240,16 @@ CSV export, Supabase client/server + anon-session proxy.
     **horizon selector (3/6/12/18/24m)** + window total. 87 tests total.
   - Dashboard: 3-link nav row (Accounts / Recurring / Relief). Gate verified E2E
     on live (net worth math + edit; Netflix detected + dismiss/restore).
-- **Next: Phase 8** (Goals — savings goals with target/date/progress), then
-  Phase 9 (i18n EN/中文/BM polish). PWA + Google SSO already shipped.
+- **Phase 10 DONE + LIVE (2026-08-04): Households (fully shared)** — reverses the
+  old single-user-only decision. `households`/`household_members`(+email)/
+  `household_invites` (migration 0010). SECURITY DEFINER helpers
+  `my_household_ids()` / `household_user_ids()`; RPCs create_household /
+  create_invite / join_household / leave_household. **ALL data-table RLS re-scoped**
+  from `user_id = auth.uid()` to `user_id IN (household_user_ids())` — solo users
+  unaffected (helper returns just self when in no household). `/household` page:
+  create, member list, invite share-link, join via `?invite=token`, leave.
+  merchant_memory lookups take the most-used row (dupes across members). Verified
+  E2E on live: invite → join → shared data visible to both. **Privacy note:** all
+  household members see & edit everything. ai_usage stays per-user (personal cap);
+  statement Storage files remain per-uploader.
+- **Next: Phase 8** (Goals), then Phase 9 (i18n EN/中文/BM). PWA + SSO shipped.

@@ -158,9 +158,10 @@ All charts must render from a single month-window query; do not fetch all histor
 - ❌ Chat-with-your-finances / AI insights / anomaly detection
 - ❌ Bank API / open banking auto-sync — accounts & balances are **manual** (Phase 6)
 - ❌ Multi-currency (MYR only in v1)
-- ❌ Shared / household / partner tracking — JTracker is **single-user** (core decision
-  #5). Monarch's partner-sync is deliberately deferred to a possible v2; adding it means
-  reworking the RLS/ownership model, so it is out of scope for this build.
+- ✅ ~~Shared / household tracking~~ **NOW BUILT (Phase 10, 2026-08-04)** — fully-shared
+  households: invite by link, join via Google, all members see & edit everything.
+  Reverses core decision #5. (Per-person-within-household, Monarch-style, remains a
+  possible future refinement.)
 - ❌ Recurring transaction **auto-generation** (v2). Note: recurring *detection &
   tracking* (surfacing subscriptions + upcoming due) **is** in scope — Phase 7.
 - ❌ Budgets & alerts (Monarch has these; not requested, kept out for now)
