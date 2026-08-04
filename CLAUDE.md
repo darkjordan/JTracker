@@ -264,4 +264,13 @@ CSV export, Supabase client/server + anon-session proxy.
   isolated again. **Privacy note:** approved members see & edit everything.
   ai_usage stays per-user (personal cap); statement Storage files remain
   per-uploader.
+- **Owner-safety fix (2026-08-05, migration 0013):** found + fixed a live bug —
+  the real household "JP" had **zero owner rows**. Root cause: `join_household`
+  unconditionally set `role='member'` on conflict(user_id), so an owner who
+  opened their **own** invite link silently demoted themselves (this happened to
+  jordan.chin90@gmail.com on JP; restored by hand). Fixed: `join_household` now
+  refuses if the caller is currently an active owner elsewhere ("leave it before
+  joining another"); `leave_household` **auto-promotes** the longest-standing
+  other active member to owner, so a household with members is never left
+  ownerless. Both guards verified live via REST.
 - **Next: Phase 8** (Goals), then Phase 9 (i18n EN/中文/BM). PWA + SSO shipped.
