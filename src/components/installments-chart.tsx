@@ -63,6 +63,17 @@ export default function InstallmentsChart({ plans }: { plans: RecurringPlan[] })
   );
   const total = useMemo(() => data.reduce((a, d) => a + d.sen, 0), [data]);
 
+  // Scale the Y-axis to the visible range (not forced to 0), so a tight band of
+  // similar amounts fills the chart instead of leaving empty space below.
+  const domain = useMemo<[number, number]>(() => {
+    const vals = data.map((d) => d.rm);
+    const hi = Math.max(...vals, 0);
+    const lo = Math.min(...vals, hi);
+    if (lo === hi) return [Math.max(0, lo - (lo || 1) * 0.2), hi + (hi || 1) * 0.2];
+    const pad = (hi - lo) * 0.1;
+    return [Math.max(0, lo - pad), hi + pad];
+  }, [data]);
+
   if (!plans.some((p) => p.next_due) || total === 0) return null;
 
   return (
@@ -101,7 +112,7 @@ export default function InstallmentsChart({ plans }: { plans: RecurringPlan[] })
             />
             <YAxis
               width={40}
-              domain={[0, "auto"]}
+              domain={domain}
               allowDecimals={false}
               tick={<YTick />}
               axisLine={false}
