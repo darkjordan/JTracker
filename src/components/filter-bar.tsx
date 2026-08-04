@@ -15,6 +15,9 @@ export default function FilterBar({
   categories,
   reviewedOnly,
   onReviewedOnly,
+  members,
+  member,
+  onMember,
 }: {
   search: string;
   onSearch: (v: string) => void;
@@ -25,6 +28,9 @@ export default function FilterBar({
   categories: Category[];
   reviewedOnly: boolean;
   onReviewedOnly: (v: boolean) => void;
+  members?: { id: string; label: string }[];
+  member?: string | null;
+  onMember?: (v: string | null) => void;
 }) {
   const field =
     "rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-600 bg-white";
@@ -81,6 +87,21 @@ export default function FilterBar({
           To review
         </button>
       </div>
+      {members && members.length > 1 && onMember && (
+        <select
+          value={member ?? ""}
+          onChange={(e) => onMember(e.target.value || null)}
+          aria-label="Member filter"
+          className={`w-full ${field}`}
+        >
+          <option value="">Everyone</option>
+          {members.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+      )}
     </div>
   );
 }

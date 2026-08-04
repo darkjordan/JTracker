@@ -71,7 +71,7 @@ export default function HouseholdPage() {
   }
 
   async function doJoin() {
-    if (!inviteToken) return;
+    if (!inviteToken || me?.anon) return; // login is mandatory to join
     setBusy(true);
     setMsg(null);
     try {
@@ -117,16 +117,30 @@ export default function HouseholdPage() {
           <p className="mt-1 text-xs text-indigo-700">
             Joining <b>merges your data into the shared household</b> — all members
             can see and edit everything.
-            {me?.anon && " Tip: sign in with Google first so your account follows you across devices."}
           </p>
-          <button
-            type="button"
-            onClick={doJoin}
-            disabled={busy}
-            className="mt-3 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {busy ? "Joining…" : inThisHousehold ? "Switch to this household" : "Join household"}
-          </button>
+          {me?.anon ? (
+            <>
+              <p className="mt-2 text-xs text-indigo-700">
+                Sign in with Google first — a joined household needs a real account
+                so it follows you across devices.
+              </p>
+              <Link
+                href={`/login?next=${encodeURIComponent(`/household?invite=${inviteToken}`)}`}
+                className="mt-3 block w-full rounded-xl bg-indigo-600 py-2.5 text-center text-sm font-semibold text-white"
+              >
+                Sign in with Google to join
+              </Link>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={doJoin}
+              disabled={busy}
+              className="mt-3 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {busy ? "Joining…" : inThisHousehold ? "Switch to this household" : "Join household"}
+            </button>
+          )}
         </section>
       )}
 

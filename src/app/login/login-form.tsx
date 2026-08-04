@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginForm({ errorMessage }: { errorMessage?: string }) {
+export default function LoginForm({
+  errorMessage,
+  next,
+}: {
+  errorMessage?: string;
+  next?: string;
+}) {
   // If a previous *link* attempt failed because the Google account already
   // belongs to someone, fall back to a normal sign-in on the next tap.
   const linkedElsewhere =
@@ -24,7 +30,10 @@ export default function LoginForm({ errorMessage }: { errorMessage?: string }) {
     setStatus("redirecting");
     setError(null);
     const supabase = createClient();
-    const options = { redirectTo: `${window.location.origin}/auth/callback` };
+    const callback = `${window.location.origin}/auth/callback${
+      next ? `?next=${encodeURIComponent(next)}` : ""
+    }`;
+    const options = { redirectTo: callback };
     const {
       data: { user },
     } = await supabase.auth.getUser();

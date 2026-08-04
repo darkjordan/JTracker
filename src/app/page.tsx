@@ -56,6 +56,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [reviewedOnly, setReviewedOnly] = useState(false);
+  const [memberFilter, setMemberFilter] = useState<string | null>(null);
 
   const load = useCallback(async (y: number, m: number) => {
     try {
@@ -106,6 +107,11 @@ export default function Dashboard() {
     [txns, sel]
   );
 
+  const memberList = useMemo(
+    () => [...memberMap].map(([id, badge]) => ({ id, label: badge.label })),
+    [memberMap]
+  );
+
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
     return txns.filter(
@@ -113,9 +119,10 @@ export default function Dashboard() {
         (typeFilter === "all" || t.type === typeFilter) &&
         (!catFilter || categoryKey(t) === catFilter) &&
         (!reviewedOnly || !t.reviewed) &&
+        (!memberFilter || t.user_id === memberFilter) &&
         (!q || t.merchant.toLowerCase().includes(q))
     );
-  }, [txns, catFilter, typeFilter, reviewedOnly, search]);
+  }, [txns, catFilter, typeFilter, reviewedOnly, memberFilter, search]);
 
   async function toggleReviewed(t: Transaction) {
     const next = !t.reviewed;
@@ -152,7 +159,11 @@ export default function Dashboard() {
     setSel({ y: Math.floor(idx / 12), m: (idx % 12) + 1 });
   };
   const hasFilter =
-    !!catFilter || typeFilter !== "all" || reviewedOnly || search.trim() !== "";
+    !!catFilter ||
+    typeFilter !== "all" ||
+    reviewedOnly ||
+    !!memberFilter ||
+    search.trim() !== "";
 
   return (
     <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
@@ -276,6 +287,9 @@ export default function Dashboard() {
                 categories={categories}
                 reviewedOnly={reviewedOnly}
                 onReviewedOnly={setReviewedOnly}
+                members={memberList}
+                member={memberFilter}
+                onMember={setMemberFilter}
               />
             </div>
             {shown.length === 0 ? (

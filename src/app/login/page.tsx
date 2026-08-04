@@ -4,9 +4,9 @@ import LoginForm from "./login-form";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10">
@@ -19,7 +19,7 @@ export default async function LoginPage({
         </p>
       </div>
 
-      <LoginForm errorMessage={error} />
+      <LoginForm errorMessage={error} next={next} />
 
       <Link
         href="/"
