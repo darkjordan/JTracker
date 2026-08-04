@@ -27,10 +27,14 @@ export async function getHousehold(): Promise<Household | null> {
     .from("household_members")
     .select("user_id, role, email, status")
     .eq("household_id", hh.id);
+  // Owner always first, regardless of join order.
+  const sorted = [...((members ?? []) as HouseholdMember[])].sort((a, b) =>
+    a.role === b.role ? 0 : a.role === "owner" ? -1 : 1
+  );
   return {
     id: hh.id,
     name: hh.name,
-    members: (members ?? []) as HouseholdMember[],
+    members: sorted,
   };
 }
 
