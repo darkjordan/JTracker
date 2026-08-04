@@ -249,7 +249,19 @@ CSV export, Supabase client/server + anon-session proxy.
   unaffected (helper returns just self when in no household). `/household` page:
   create, member list, invite share-link, join via `?invite=token`, leave.
   merchant_memory lookups take the most-used row (dupes across members). Verified
-  E2E on live: invite → join → shared data visible to both. **Privacy note:** all
-  household members see & edit everything. ai_usage stays per-user (personal cap);
-  statement Storage files remain per-uploader.
+  E2E on live: invite → join → shared data visible to both.
+  **Owner approval required to join (2026-08-05, migration 0012):**
+  `household_members.status` (pending/active). `join_household` creates a
+  PENDING row, not membership; `household_user_ids()` only expands to active
+  members of a household the CALLER is themselves active in, so a pending
+  requester sees/writes only their own data — never the household's — until
+  approved. RPCs `approve_member` / `reject_member` / `remove_member` are
+  owner-only (enforced server-side). `/household`: owner sees a "Join requests"
+  list (Approve/Reject) and a Remove button per active member (not self); a
+  pending requester sees a "Waiting for approval" state and can cancel.
+  Verified E2E (REST + live browser button clicks): join→pending→isolated→
+  non-owner-approve-blocked→owner-approves→shared-visible→owner-removes→
+  isolated again. **Privacy note:** approved members see & edit everything.
+  ai_usage stays per-user (personal cap); statement Storage files remain
+  per-uploader.
 - **Next: Phase 8** (Goals), then Phase 9 (i18n EN/中文/BM). PWA + SSO shipped.
