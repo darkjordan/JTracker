@@ -188,11 +188,12 @@ export default function Dashboard() {
         <KpiTiles kpis={kpis} />
       </div>
 
-      <nav className="mb-4 grid grid-cols-3 gap-2">
+      <nav className="mb-4 grid grid-cols-2 gap-2">
         {[
           { href: "/accounts", label: "💰 Accounts" },
           { href: "/recurring", label: "🔁 Recurring" },
           { href: "/relief", label: "🎯 Relief" },
+          { href: "/household", label: "👨‍👩‍👧 Household" },
         ].map((l) => (
           <Link
             key={l.href}

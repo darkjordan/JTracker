@@ -1,0 +1,59 @@
+import { createClient } from "@/lib/supabase/client";
+
+export type HouseholdMember = {
+  user_id: string;
+  role: "owner" | "member";
+  email: string | null;
+};
+export type Household = {
+  id: string;
+  name: string;
+  members: HouseholdMember[];
+};
+
+/** The caller's household (with members), or null if they're not in one. */
+export async function getHousehold(): Promise<Household | null> {
+  const supabase = createClient();
+  const { data: hh } = await supabase
+    .from("households")
+    .select("id, name")
+    .limit(1)
+    .maybeSingle();
+  if (!hh) return null;
+  const { data: members } = await supabase
+    .from("household_members")
+    .select("user_id, role, email")
+    .eq("household_id", hh.id);
+  return {
+    id: hh.id,
+    name: hh.name,
+    members: (members ?? []) as HouseholdMember[],
+  };
+}
+
+export async function createHousehold(name: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("create_household", { p_name: name });
+  if (error) throw error;
+}
+
+/** Create an invite and return a shareable join URL. */
+export async function createInviteUrl(): Promise<string> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("create_invite");
+  if (error) throw error;
+  const token = data as string;
+  return `${window.location.origin}/household?invite=${token}`;
+}
+
+export async function joinHousehold(token: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("join_household", { p_token: token });
+  if (error) throw error;
+}
+
+export async function leaveHousehold(): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("leave_household");
+  if (error) throw error;
+}

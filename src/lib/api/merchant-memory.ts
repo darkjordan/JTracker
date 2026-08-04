@@ -11,12 +11,15 @@ export async function getMerchantMemory(
 ): Promise<MerchantMemory | null> {
   if (!merchantNorm) return null;
   const supabase = createClient();
+  // In a household there may be a row per member for the same merchant; take the
+  // most-used one.
   const { data } = await supabase
     .from("merchant_memory")
     .select("category_id, tax_relief_code")
     .eq("merchant_norm", merchantNorm)
-    .maybeSingle();
-  return (data as MerchantMemory) ?? null;
+    .order("times_used", { ascending: false })
+    .limit(1);
+  return ((data && data[0]) as MerchantMemory) ?? null;
 }
 
 /** Bulk lookup for many merchants at once (for statement import). */
@@ -28,14 +31,18 @@ export async function getMerchantMemories(
   const supabase = createClient();
   const { data } = await supabase
     .from("merchant_memory")
-    .select("merchant_norm, category_id, tax_relief_code")
-    .in("merchant_norm", unique);
+    .select("merchant_norm, category_id, tax_relief_code, times_used")
+    .in("merchant_norm", unique)
+    .order("times_used", { ascending: false });
   const map = new Map<string, MerchantMemory>();
   for (const r of (data ?? []) as (MerchantMemory & { merchant_norm: string })[]) {
-    map.set(r.merchant_norm, {
-      category_id: r.category_id,
-      tax_relief_code: r.tax_relief_code,
-    });
+    // ordered by times_used desc → first (most-used) wins per merchant
+    if (!map.has(r.merchant_norm)) {
+      map.set(r.merchant_norm, {
+        category_id: r.category_id,
+        tax_relief_code: r.tax_relief_code,
+      });
+    }
   }
   return map;
 }
