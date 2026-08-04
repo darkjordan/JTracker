@@ -13,6 +13,7 @@ export type Category = {
 
 export type Transaction = {
   id: string;
+  user_id: string;
   type: TxType;
   amount_sen: number;
   currency: string;

@@ -2,6 +2,7 @@
 
 import { formatSen } from "@/lib/money";
 import type { Category, Transaction } from "@/lib/api/types";
+import type { MemberBadge } from "@/lib/member-colors";
 
 function dayLabel(dateStr: string): string {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-MY", {
@@ -15,11 +16,13 @@ function dayLabel(dateStr: string): string {
 export default function TransactionList({
   groups,
   catById,
+  members,
   onEdit,
   onToggleReviewed,
 }: {
   groups: [string, Transaction[]][];
   catById: Map<string, Category>;
+  members?: Map<string, MemberBadge>;
   onEdit: (t: Transaction) => void;
   onToggleReviewed: (t: Transaction) => void;
 }) {
@@ -33,8 +36,13 @@ export default function TransactionList({
           <ul className="divide-y divide-gray-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
             {rows.map((t) => {
               const cat = t.category_id ? catById.get(t.category_id) : null;
+              const who = members?.get(t.user_id);
               return (
-                <li key={t.id} className="flex items-center">
+                <li
+                  key={t.id}
+                  className="flex items-center"
+                  style={who ? { borderLeft: `3px solid ${who.color}` } : undefined}
+                >
                   <button
                     type="button"
                     onClick={() => onEdit(t)}
@@ -47,6 +55,14 @@ export default function TransactionList({
                       </span>
                       <span className="block truncate text-xs text-gray-400">
                         {cat?.name ?? "Uncategorized"}
+                        {who && (
+                          <>
+                            {" · "}
+                            <span style={{ color: who.color }} className="font-medium">
+                              {who.label}
+                            </span>
+                          </>
+                        )}
                       </span>
                     </span>
                     <span

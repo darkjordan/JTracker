@@ -3,7 +3,7 @@ import { normalizeMerchant } from "@/lib/money";
 import type { Transaction, NewTransaction } from "./types";
 
 const COLS =
-  "id,type,amount_sen,currency,merchant,merchant_norm,category_id,tax_relief_code,occurred_at,note,source,reviewed,created_at";
+  "id,user_id,type,amount_sen,currency,merchant,merchant_norm,category_id,tax_relief_code,occurred_at,note,source,reviewed,created_at";
 
 /** Local (not UTC) YYYY-MM-DD, so a late-night entry lands on the right day. */
 export function todayLocal(): string {

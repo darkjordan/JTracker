@@ -17,6 +17,8 @@ import TrendChart from "@/components/trend-chart";
 import { PrivacyToggle } from "@/components/money-privacy";
 import { listCategories } from "@/lib/api/categories";
 import { listReliefs } from "@/lib/api/tax-relief";
+import { getHousehold } from "@/lib/api/household";
+import { memberBadges, type MemberBadge } from "@/lib/member-colors";
 import type { ReliefRow } from "@/lib/relief";
 import {
   listTransactionsForMonth,
@@ -50,6 +52,7 @@ export default function Dashboard() {
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [trend, setTrend] = useState<MonthPoint[]>([]);
   const [reliefs, setReliefs] = useState<ReliefRow[]>([]);
+  const [memberMap, setMemberMap] = useState<Map<string, MemberBadge>>(new Map());
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [reviewedOnly, setReviewedOnly] = useState(false);
@@ -60,16 +63,21 @@ export default function Dashboard() {
       const months = monthsEndingAt(y, m, 6);
       const start = `${months[0].y}-${pad(months[0].m)}-01`;
       const endExcl = m === 12 ? `${y + 1}-01-01` : `${y}-${pad(m + 1)}-01`;
-      const [cats, list, range, rel] = await Promise.all([
+      const [cats, list, range, rel, hh] = await Promise.all([
         listCategories(),
         listTransactionsForMonth(y, m),
         listRangeLite(start, endExcl),
         listReliefs(y),
+        getHousehold(),
       ]);
       setCategories(cats);
       setTxns(list);
       setTrend(bucketMonthly(range, months));
       setReliefs(rel);
+      // Only tag transactions by member when actually sharing (>1 member).
+      setMemberMap(
+        hh && hh.members.length > 1 ? memberBadges(hh.members) : new Map()
+      );
     } catch {
       setError("Couldn’t load your data. Check your connection and retry.");
     } finally {
@@ -280,6 +288,7 @@ export default function Dashboard() {
               <TransactionList
                 groups={groups}
                 catById={catById}
+                members={memberMap}
                 onEdit={setEditing}
                 onToggleReviewed={toggleReviewed}
               />
