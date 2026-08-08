@@ -18,6 +18,7 @@ import { PrivacyToggle } from "@/components/money-privacy";
 import { listCategories } from "@/lib/api/categories";
 import { listReliefs } from "@/lib/api/tax-relief";
 import { getHousehold } from "@/lib/api/household";
+import { createClient } from "@/lib/supabase/client";
 import { memberBadges, type MemberBadge } from "@/lib/member-colors";
 import type { ReliefRow } from "@/lib/relief";
 import {
@@ -42,6 +43,9 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const now = new Date();
 const CUR = { y: now.getFullYear(), m: now.getMonth() + 1 };
 
+const SCOPE_KEY = "jtracker:txnScope";
+type Scope = "self" | "household";
+
 export default function Dashboard() {
   const [sel, setSel] = useState(CUR); // { y, m } — selected month
   const [categories, setCategories] = useState<Category[]>([]);
@@ -56,31 +60,65 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [reviewedOnly, setReviewedOnly] = useState(false);
-  const [memberFilter, setMemberFilter] = useState<string | null>(null);
+  const [showScopeToggle, setShowScopeToggle] = useState(false);
+  const [scope, setScope] = useState<Scope>("household");
 
-  const load = useCallback(async (y: number, m: number) => {
+  useEffect(() => {
+    // One-time read of the persisted preference (see money-privacy.tsx for why
+    // this lives in an effect rather than a lazy initializer: SSR can't see
+    // localStorage, so reading it up front would cause a hydration mismatch).
+    const saved = localStorage.getItem(SCOPE_KEY);
+    if (saved === "self" || saved === "household") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setScope(saved);
+    }
+  }, []);
+
+  function changeScope(next: Scope) {
+    setScope(next);
+    try {
+      localStorage.setItem(SCOPE_KEY, next);
+    } catch {
+      /* ignore storage failures (private mode) */
+    }
+  }
+
+  const load = useCallback(async (y: number, m: number, sc: Scope) => {
     try {
       setError(null);
       const months = monthsEndingAt(y, m, 6);
       const start = `${months[0].y}-${pad(months[0].m)}-01`;
       const endExcl = m === 12 ? `${y + 1}-01-01` : `${y}-${pad(m + 1)}-01`;
-      const [cats, list, range, rel, hh] = await Promise.all([
+      const supabase = createClient();
+      const [
+        cats,
+        {
+          data: { user },
+        },
+        rel,
+        hh,
+      ] = await Promise.all([
         listCategories(),
-        listTransactionsForMonth(y, m),
-        listRangeLite(start, endExcl),
+        supabase.auth.getUser(),
         listReliefs(y),
         getHousehold(),
+      ]);
+      // Only offer the scope toggle (and tag transactions by member) when
+      // actually sharing with >1 APPROVED member — pending requesters have
+      // no shared data yet.
+      const activeMembers = hh?.members.filter((m) => m.status === "active") ?? [];
+      const sharing = activeMembers.length > 1;
+      setShowScopeToggle(sharing);
+      setMemberMap(sharing ? memberBadges(activeMembers) : new Map());
+      const selfId = sharing && sc === "self" ? user?.id : undefined;
+      const [list, range] = await Promise.all([
+        listTransactionsForMonth(y, m, selfId),
+        listRangeLite(start, endExcl, selfId),
       ]);
       setCategories(cats);
       setTxns(list);
       setTrend(bucketMonthly(range, months));
       setReliefs(rel);
-      // Only tag transactions by member when actually sharing with >1 APPROVED
-      // member — pending requesters have no shared data yet.
-      const activeMembers = hh?.members.filter((m) => m.status === "active") ?? [];
-      setMemberMap(
-        activeMembers.length > 1 ? memberBadges(activeMembers) : new Map()
-      );
     } catch {
       setError("Couldn’t load your data. Check your connection and retry.");
     } finally {
@@ -90,9 +128,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     (async () => {
-      await load(sel.y, sel.m);
+      await load(sel.y, sel.m, scope);
     })();
-  }, [sel, load]);
+  }, [sel, scope, load]);
 
   const catById = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
@@ -109,11 +147,6 @@ export default function Dashboard() {
     [txns, sel]
   );
 
-  const memberList = useMemo(
-    () => [...memberMap].map(([id, badge]) => ({ id, label: badge.label })),
-    [memberMap]
-  );
-
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
     return txns.filter(
@@ -121,10 +154,9 @@ export default function Dashboard() {
         (typeFilter === "all" || t.type === typeFilter) &&
         (!catFilter || categoryKey(t) === catFilter) &&
         (!reviewedOnly || !t.reviewed) &&
-        (!memberFilter || t.user_id === memberFilter) &&
         (!q || t.merchant.toLowerCase().includes(q))
     );
-  }, [txns, catFilter, typeFilter, reviewedOnly, memberFilter, search]);
+  }, [txns, catFilter, typeFilter, reviewedOnly, search]);
 
   async function toggleReviewed(t: Transaction) {
     const next = !t.reviewed;
@@ -164,7 +196,6 @@ export default function Dashboard() {
     !!catFilter ||
     typeFilter !== "all" ||
     reviewedOnly ||
-    !!memberFilter ||
     search.trim() !== "";
 
   return (
@@ -228,18 +259,18 @@ export default function Dashboard() {
 
       <QuickEntry
         categories={categories}
-        onAdded={() => load(sel.y, sel.m)}
+        onAdded={() => load(sel.y, sel.m, scope)}
       />
 
       <ScanButton
         categories={categories}
         reliefs={reliefs}
-        onSaved={() => load(sel.y, sel.m)}
+        onSaved={() => load(sel.y, sel.m, scope)}
       />
 
       <StatementImport
         categories={categories}
-        onCommitted={() => load(sel.y, sel.m)}
+        onCommitted={() => load(sel.y, sel.m, scope)}
       />
 
       {loading ? (
@@ -251,7 +282,7 @@ export default function Dashboard() {
             type="button"
             onClick={() => {
               setLoading(true);
-              load(sel.y, sel.m);
+              load(sel.y, sel.m, scope);
             }}
             className="mt-3 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
           >
@@ -289,9 +320,9 @@ export default function Dashboard() {
                 categories={categories}
                 reviewedOnly={reviewedOnly}
                 onReviewedOnly={setReviewedOnly}
-                members={memberList}
-                member={memberFilter}
-                onMember={setMemberFilter}
+                showScopeToggle={showScopeToggle}
+                scope={scope}
+                onScope={changeScope}
               />
             </div>
             {shown.length === 0 ? (
@@ -319,7 +350,7 @@ export default function Dashboard() {
           categories={categories}
           reliefs={reliefs}
           onClose={() => setEditing(null)}
-          onChanged={() => load(sel.y, sel.m)}
+          onChanged={() => load(sel.y, sel.m, scope)}
           onDeleted={(id) => setTxns((prev) => prev.filter((t) => t.id !== id))}
         />
       )}

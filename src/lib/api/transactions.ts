@@ -25,17 +25,24 @@ export async function listRecentTransactions(limit = 200): Promise<Transaction[]
   return (data ?? []) as Transaction[];
 }
 
-/** Light rows over a date range [startISO, endISOExclusive) — for the trend. */
+/**
+ * Light rows over a date range [startISO, endISOExclusive) — for the trend.
+ * `userId`, when given, scopes to that one member (e.g. "myself" in a
+ * household); omitted, RLS already scopes to the whole household.
+ */
 export async function listRangeLite(
   startISO: string,
-  endISOExclusive: string
+  endISOExclusive: string,
+  userId?: string
 ): Promise<{ type: string; amount_sen: number; occurred_at: string }[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
+  let q = supabase
     .from("transactions")
     .select("type, amount_sen, occurred_at")
     .gte("occurred_at", startISO)
     .lt("occurred_at", endISOExclusive);
+  if (userId) q = q.eq("user_id", userId);
+  const { data, error } = await q;
   if (error) throw error;
   return (data ?? []) as {
     type: string;
@@ -44,9 +51,11 @@ export async function listRangeLite(
   }[];
 }
 
+/** `userId`, when given, scopes to that one member ("myself" in a household). */
 export async function listTransactionsForMonth(
   year: number,
-  month: number // 1-12
+  month: number, // 1-12
+  userId?: string
 ): Promise<Transaction[]> {
   const start = `${year}-${String(month).padStart(2, "0")}-01`;
   const end =
@@ -54,11 +63,13 @@ export async function listTransactionsForMonth(
       ? `${year + 1}-01-01`
       : `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const supabase = createClient();
-  const { data, error } = await supabase
+  let q = supabase
     .from("transactions")
     .select(COLS)
     .gte("occurred_at", start)
-    .lt("occurred_at", end)
+    .lt("occurred_at", end);
+  if (userId) q = q.eq("user_id", userId);
+  const { data, error } = await q
     .order("occurred_at", { ascending: false })
     .order("created_at", { ascending: false });
   if (error) throw error;
