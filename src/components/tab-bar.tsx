@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export type MainTab = "add" | "history";
 
 const TABS: { id: MainTab; icon: string; label: string }[] = [
@@ -7,7 +9,14 @@ const TABS: { id: MainTab; icon: string; label: string }[] = [
   { id: "history", icon: "📜", label: "History" },
 ];
 
-// Fixed bottom tab bar switching between data entry and transaction history.
+const tabClass = (active: boolean) =>
+  `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs font-medium ${
+    active ? "text-indigo-600" : "text-gray-400"
+  }`;
+
+// Fixed bottom tab bar: Add/History switch local state on the dashboard;
+// Net Worth is a real route (its own PIN-gated state machine), so it's a
+// plain link rather than a controlled tab.
 export default function TabBar({
   tab,
   onTab,
@@ -27,14 +36,16 @@ export default function TabBar({
             type="button"
             onClick={() => onTab(t.id)}
             aria-current={tab === t.id ? "page" : undefined}
-            className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs font-medium ${
-              tab === t.id ? "text-indigo-600" : "text-gray-400"
-            }`}
+            className={tabClass(tab === t.id)}
           >
             <span className="text-lg leading-none">{t.icon}</span>
             {t.label}
           </button>
         ))}
+        <Link href="/networth" className={tabClass(false)}>
+          <span className="text-lg leading-none">📈</span>
+          Net Worth
+        </Link>
       </div>
     </nav>
   );

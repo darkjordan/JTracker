@@ -26,13 +26,21 @@ export default function AmountInput({
     onChangeSen(digits ? parseInt(digits, 10) : 0);
   }
 
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "." || e.key === ",") {
+      e.preventDefault();
+      return;
+    }
+    onKeyDown?.(e);
+  }
+
   return (
     <input
       type="text"
       inputMode="numeric"
       value={sen > 0 ? formatSen(sen) : ""}
       onChange={(e) => handleChange(e.target.value)}
-      onKeyDown={onKeyDown}
+      onKeyDown={handleKeyDown}
       placeholder="0.00"
       aria-label={ariaLabel}
       autoFocus={autoFocus}
