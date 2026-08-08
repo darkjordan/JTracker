@@ -273,4 +273,33 @@ CSV export, Supabase client/server + anon-session proxy.
   joining another"); `leave_household` **auto-promotes** the longest-standing
   other active member to owner, so a household with members is never left
   ownerless. Both guards verified live via REST.
+- **Dashboard split into Add/History tabs + Myself/Household scope (2026-08-08):**
+  bottom `TabBar` (`src/components/tab-bar.tsx`) separates data entry (quick
+  entry, scan, statement import) from history (month switcher, KPIs, charts,
+  filters, list, nav row). History also gained a **Myself/Household** toggle
+  (`ScopeToggle`) sitting above the KPI tiles — scopes the underlying query
+  itself (not just client-side list filtering), so it affects KPIs/charts too;
+  shown only when the household has 2+ active members, persisted via
+  localStorage, re-fetch shows a spinner. `AmountInput` (cash-register style:
+  type digits only, last two are cents, e.g. `1005` → RM10.05, no `.`/`,`
+  typeable) replaced the old decimal-string amount fields in quick entry,
+  transaction editor, and capture review. Adding a transaction now shows a
+  brief checkmark `SuccessToast`.
+- **Net Worth tab — PIN-gated, private ledger (2026-08-08, migrations
+  0014–0015):** third bottom tab, entirely separate from `/accounts` (which
+  is untouched — still the shared, unprotected everyday-balances page).
+  `networth_items` (investment/epf/property/other/liability) is **private
+  per-person** (`RLS user_id = auth.uid()`, deliberately NOT
+  `household_user_ids()` — the one table in this app that isn't
+  household-shared). Gated behind: (1) a real sign-in — anonymous sessions
+  rejected server-side by `set_networth_pin`; (2) a 4-digit PIN required on
+  **every visit** (no persistence), verified via `verify_networth_pin`
+  (bcrypt hash in `pin_locks`, no RLS policies at all — reachable only
+  through the SECURITY DEFINER RPCs, hash never reaches the client), 5 wrong
+  attempts → 5 min lockout. "Forgot PIN" signs out and forces a fresh Google
+  sign-in before `clear_networth_pin` is allowed. Verified live: RLS
+  isolation confirmed via `set_config('request.jwt.claims', ...)` (a second
+  uid sees 0 rows), full Playwright pass (setup/confirm-mismatch/unlock/add
+  item/lock/wrong-PIN/lockout) against a real (non-anonymous) confirmed test
+  account.
 - **Next: Phase 8** (Goals), then Phase 9 (i18n EN/中文/BM). PWA + SSO shipped.
