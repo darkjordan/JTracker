@@ -27,6 +27,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#4f46e5",
+  viewportFit: "cover", // lets the fixed bottom tab bar pad for the iOS home indicator
 };
 
 export default function RootLayout({

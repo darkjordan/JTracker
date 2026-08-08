@@ -9,6 +9,7 @@ import InstallPrompt from "@/components/install-prompt";
 import TransactionEditor from "@/components/transaction-editor";
 import TransactionList from "@/components/transaction-list";
 import FilterBar, { type TypeFilter } from "@/components/filter-bar";
+import TabBar, { type MainTab } from "@/components/tab-bar";
 import KpiTiles from "@/components/kpi-tiles";
 import CategoryDonut from "@/components/category-donut";
 import CashFlowBar from "@/components/cash-flow-bar";
@@ -62,6 +63,7 @@ export default function Dashboard() {
   const [reviewedOnly, setReviewedOnly] = useState(false);
   const [showScopeToggle, setShowScopeToggle] = useState(false);
   const [scope, setScope] = useState<Scope>("household");
+  const [tab, setTab] = useState<MainTab>("add");
 
   useEffect(() => {
     // One-time read of the persisted preference (see money-privacy.tsx for why
@@ -199,161 +201,171 @@ export default function Dashboard() {
     search.trim() !== "";
 
   return (
-    <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
-      <header className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-indigo-700">
-          JTracker
-        </h1>
-        <div className="flex items-center gap-2">
-          <PrivacyToggle />
-          <Link href="/settings" className="text-sm font-medium text-gray-500">
-            Settings
-          </Link>
-        </div>
-      </header>
-
-      <InstallPrompt />
-
-      {/* Month switcher */}
-      <div className="mb-3 flex items-center justify-between rounded-2xl bg-white px-2 py-1.5 shadow-sm ring-1 ring-black/5">
-        <button
-          type="button"
-          onClick={() => step(-1)}
-          className="rounded-lg px-3 py-1 text-lg text-gray-500 active:bg-gray-100"
-          aria-label="Previous month"
-        >
-          ‹
-        </button>
-        <span className="text-sm font-semibold">{monthLabel}</span>
-        <button
-          type="button"
-          onClick={() => step(1)}
-          disabled={isCurrentMonth}
-          className="rounded-lg px-3 py-1 text-lg text-gray-500 active:bg-gray-100 disabled:opacity-30"
-          aria-label="Next month"
-        >
-          ›
-        </button>
-      </div>
-
-      <div className="mb-4">
-        <KpiTiles kpis={kpis} />
-      </div>
-
-      <nav className="mb-4 grid grid-cols-2 gap-2">
-        {[
-          { href: "/accounts", label: "💰 Accounts" },
-          { href: "/recurring", label: "🔁 Recurring" },
-          { href: "/relief", label: "🎯 Relief" },
-          { href: "/household", label: "👨‍👩‍👧 Household" },
-        ].map((l) => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className="rounded-xl bg-white py-2 text-center text-xs font-medium text-gray-700 shadow-sm ring-1 ring-black/5 active:scale-[0.98]"
-          >
-            {l.label}
-          </Link>
-        ))}
-      </nav>
-
-      <QuickEntry
-        categories={categories}
-        onAdded={() => load(sel.y, sel.m, scope)}
-      />
-
-      <ScanButton
-        categories={categories}
-        reliefs={reliefs}
-        onSaved={() => load(sel.y, sel.m, scope)}
-      />
-
-      <StatementImport
-        categories={categories}
-        onCommitted={() => load(sel.y, sel.m, scope)}
-      />
-
-      {loading ? (
-        <p className="py-10 text-center text-sm text-gray-400">Loading…</p>
-      ) : error ? (
-        <div className="py-10 text-center">
-          <p className="text-sm text-red-600">{error}</p>
-          <button
-            type="button"
-            onClick={() => {
-              setLoading(true);
-              load(sel.y, sel.m, scope);
-            }}
-            className="mt-3 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
-          >
-            Retry
-          </button>
-        </div>
-      ) : (
-        <>
-          {slices.length > 0 && (
-            <div className="mt-4">
-              <CategoryDonut
-                slices={slices}
-                totalSen={kpis.expenseSen}
-                activeId={catFilter}
-                onSelect={setCatFilter}
-              />
-            </div>
-          )}
-
-          <div className="mt-4 space-y-4">
-            <CashFlowBar cf={cf} />
-            <Sparkline daily={daily} />
-            <TrendChart points={trend} />
+    <>
+      <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
+        <header className="mb-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight text-indigo-700">
+            JTracker
+          </h1>
+          <div className="flex items-center gap-2">
+            <PrivacyToggle />
+            <Link href="/settings" className="text-sm font-medium text-gray-500">
+              Settings
+            </Link>
           </div>
+        </header>
 
-          <section className="mt-5">
-            <div className="mb-3">
-              <FilterBar
-                search={search}
-                onSearch={setSearch}
-                type={typeFilter}
-                onType={setTypeFilter}
-                category={catFilter}
-                onCategory={setCatFilter}
-                categories={categories}
-                reviewedOnly={reviewedOnly}
-                onReviewedOnly={setReviewedOnly}
-                showScopeToggle={showScopeToggle}
-                scope={scope}
-                onScope={changeScope}
-              />
+        <InstallPrompt />
+
+        {tab === "add" ? (
+          <>
+            <QuickEntry
+              categories={categories}
+              onAdded={() => load(sel.y, sel.m, scope)}
+            />
+
+            <ScanButton
+              categories={categories}
+              reliefs={reliefs}
+              onSaved={() => load(sel.y, sel.m, scope)}
+            />
+
+            <StatementImport
+              categories={categories}
+              onCommitted={() => load(sel.y, sel.m, scope)}
+            />
+          </>
+        ) : (
+          <>
+            {/* Month switcher */}
+            <div className="mb-3 flex items-center justify-between rounded-2xl bg-white px-2 py-1.5 shadow-sm ring-1 ring-black/5">
+              <button
+                type="button"
+                onClick={() => step(-1)}
+                className="rounded-lg px-3 py-1 text-lg text-gray-500 active:bg-gray-100"
+                aria-label="Previous month"
+              >
+                ‹
+              </button>
+              <span className="text-sm font-semibold">{monthLabel}</span>
+              <button
+                type="button"
+                onClick={() => step(1)}
+                disabled={isCurrentMonth}
+                className="rounded-lg px-3 py-1 text-lg text-gray-500 active:bg-gray-100 disabled:opacity-30"
+                aria-label="Next month"
+              >
+                ›
+              </button>
             </div>
-            {shown.length === 0 ? (
-              <p className="py-10 text-center text-sm text-gray-500">
-                {hasFilter
-                  ? "No transactions match these filters."
-                  : "No transactions this month. Add one above."}
-              </p>
-            ) : (
-              <TransactionList
-                groups={groups}
-                catById={catById}
-                members={memberMap}
-                onEdit={setEditing}
-                onToggleReviewed={toggleReviewed}
-              />
-            )}
-          </section>
-        </>
-      )}
 
-      {editing && (
-        <TransactionEditor
-          txn={editing}
-          categories={categories}
-          reliefs={reliefs}
-          onClose={() => setEditing(null)}
-          onChanged={() => load(sel.y, sel.m, scope)}
-          onDeleted={(id) => setTxns((prev) => prev.filter((t) => t.id !== id))}
-        />
-      )}
-    </main>
+            <div className="mb-4">
+              <KpiTiles kpis={kpis} />
+            </div>
+
+            <nav className="mb-4 grid grid-cols-2 gap-2">
+              {[
+                { href: "/accounts", label: "💰 Accounts" },
+                { href: "/recurring", label: "🔁 Recurring" },
+                { href: "/relief", label: "🎯 Relief" },
+                { href: "/household", label: "👨‍👩‍👧 Household" },
+              ].map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="rounded-xl bg-white py-2 text-center text-xs font-medium text-gray-700 shadow-sm ring-1 ring-black/5 active:scale-[0.98]"
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+
+            {loading ? (
+              <p className="py-10 text-center text-sm text-gray-400">Loading…</p>
+            ) : error ? (
+              <div className="py-10 text-center">
+                <p className="text-sm text-red-600">{error}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoading(true);
+                    load(sel.y, sel.m, scope);
+                  }}
+                  className="mt-3 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <>
+                {slices.length > 0 && (
+                  <div className="mt-4">
+                    <CategoryDonut
+                      slices={slices}
+                      totalSen={kpis.expenseSen}
+                      activeId={catFilter}
+                      onSelect={setCatFilter}
+                    />
+                  </div>
+                )}
+
+                <div className="mt-4 space-y-4">
+                  <CashFlowBar cf={cf} />
+                  <Sparkline daily={daily} />
+                  <TrendChart points={trend} />
+                </div>
+
+                <section className="mt-5">
+                  <div className="mb-3">
+                    <FilterBar
+                      search={search}
+                      onSearch={setSearch}
+                      type={typeFilter}
+                      onType={setTypeFilter}
+                      category={catFilter}
+                      onCategory={setCatFilter}
+                      categories={categories}
+                      reviewedOnly={reviewedOnly}
+                      onReviewedOnly={setReviewedOnly}
+                      showScopeToggle={showScopeToggle}
+                      scope={scope}
+                      onScope={changeScope}
+                    />
+                  </div>
+                  {shown.length === 0 ? (
+                    <p className="py-10 text-center text-sm text-gray-500">
+                      {hasFilter
+                        ? "No transactions match these filters."
+                        : "No transactions this month. Tap Add below to log one."}
+                    </p>
+                  ) : (
+                    <TransactionList
+                      groups={groups}
+                      catById={catById}
+                      members={memberMap}
+                      onEdit={setEditing}
+                      onToggleReviewed={toggleReviewed}
+                    />
+                  )}
+                </section>
+              </>
+            )}
+          </>
+        )}
+
+        {editing && (
+          <TransactionEditor
+            txn={editing}
+            categories={categories}
+            reliefs={reliefs}
+            onClose={() => setEditing(null)}
+            onChanged={() => load(sel.y, sel.m, scope)}
+            onDeleted={(id) => setTxns((prev) => prev.filter((t) => t.id !== id))}
+          />
+        )}
+      </main>
+
+      <TabBar tab={tab} onTab={setTab} />
+    </>
   );
 }
