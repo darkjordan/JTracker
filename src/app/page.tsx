@@ -10,6 +10,7 @@ import TransactionEditor from "@/components/transaction-editor";
 import TransactionList from "@/components/transaction-list";
 import FilterBar, { type TypeFilter } from "@/components/filter-bar";
 import TabBar, { type MainTab } from "@/components/tab-bar";
+import ScopeToggle, { type Scope } from "@/components/scope-toggle";
 import KpiTiles from "@/components/kpi-tiles";
 import CategoryDonut from "@/components/category-donut";
 import CashFlowBar from "@/components/cash-flow-bar";
@@ -45,7 +46,6 @@ const now = new Date();
 const CUR = { y: now.getFullYear(), m: now.getMonth() + 1 };
 
 const SCOPE_KEY = "jtracker:txnScope";
-type Scope = "self" | "household";
 
 export default function Dashboard() {
   const [sel, setSel] = useState(CUR); // { y, m } — selected month
@@ -77,6 +77,7 @@ export default function Dashboard() {
   }, []);
 
   function changeScope(next: Scope) {
+    setLoading(true);
     setScope(next);
     try {
       localStorage.setItem(SCOPE_KEY, next);
@@ -259,29 +260,15 @@ export default function Dashboard() {
               </button>
             </div>
 
-            <div className="mb-4">
-              <KpiTiles kpis={kpis} />
-            </div>
-
-            <nav className="mb-4 grid grid-cols-2 gap-2">
-              {[
-                { href: "/accounts", label: "💰 Accounts" },
-                { href: "/recurring", label: "🔁 Recurring" },
-                { href: "/relief", label: "🎯 Relief" },
-                { href: "/household", label: "👨‍👩‍👧 Household" },
-              ].map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="rounded-xl bg-white py-2 text-center text-xs font-medium text-gray-700 shadow-sm ring-1 ring-black/5 active:scale-[0.98]"
-                >
-                  {l.label}
-                </Link>
-              ))}
-            </nav>
+            {showScopeToggle && (
+              <ScopeToggle scope={scope} onScope={changeScope} disabled={loading} />
+            )}
 
             {loading ? (
-              <p className="py-10 text-center text-sm text-gray-400">Loading…</p>
+              <div className="flex flex-col items-center justify-center gap-3 py-20">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-indigo-600" />
+                <p className="text-sm text-gray-400">Loading…</p>
+              </div>
             ) : error ? (
               <div className="py-10 text-center">
                 <p className="text-sm text-red-600">{error}</p>
@@ -298,6 +285,27 @@ export default function Dashboard() {
               </div>
             ) : (
               <>
+                <div className="mb-4">
+                  <KpiTiles kpis={kpis} />
+                </div>
+
+                <nav className="mb-4 grid grid-cols-2 gap-2">
+                  {[
+                    { href: "/accounts", label: "💰 Accounts" },
+                    { href: "/recurring", label: "🔁 Recurring" },
+                    { href: "/relief", label: "🎯 Relief" },
+                    { href: "/household", label: "👨‍👩‍👧 Household" },
+                  ].map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      className="rounded-xl bg-white py-2 text-center text-xs font-medium text-gray-700 shadow-sm ring-1 ring-black/5 active:scale-[0.98]"
+                    >
+                      {l.label}
+                    </Link>
+                  ))}
+                </nav>
+
                 {slices.length > 0 && (
                   <div className="mt-4">
                     <CategoryDonut
@@ -327,9 +335,6 @@ export default function Dashboard() {
                       categories={categories}
                       reviewedOnly={reviewedOnly}
                       onReviewedOnly={setReviewedOnly}
-                      showScopeToggle={showScopeToggle}
-                      scope={scope}
-                      onScope={changeScope}
                     />
                   </div>
                   {shown.length === 0 ? (
