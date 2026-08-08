@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { parseAmountToSen, normalizeMerchant } from "@/lib/money";
+import { normalizeMerchant } from "@/lib/money";
 import { createTransaction, todayLocal } from "@/lib/api/transactions";
 import { getMerchantMemory, rememberMerchant } from "@/lib/api/merchant-memory";
+import AmountInput from "@/components/amount-input";
 import type { Category, TxType } from "@/lib/api/types";
 import type { ParsedCapture } from "@/lib/capture";
 import type { ReliefRow } from "@/lib/relief";
@@ -28,8 +29,8 @@ export default function CaptureReview({
   );
 
   const [type, setType] = useState<TxType>(parsed.type ?? "expense");
-  const [amount, setAmount] = useState(
-    parsed.amount ? parsed.amount.toFixed(2) : ""
+  const [amountSen, setAmountSen] = useState(
+    parsed.amount ? Math.round(parsed.amount * 100) : 0
   );
   const [merchant, setMerchant] = useState(parsed.merchant ?? "");
   const [categoryId, setCategoryId] = useState("");
@@ -63,8 +64,7 @@ export default function CaptureReview({
   }, [merchantNorm, parsed.suggested_category, categories]);
 
   async function save() {
-    const sen = parseAmountToSen(amount);
-    if (sen === null || sen <= 0) {
+    if (amountSen <= 0) {
       setError("Enter a valid amount.");
       return;
     }
@@ -74,7 +74,7 @@ export default function CaptureReview({
       const relief = type === "expense" ? reliefCode || null : null;
       await createTransaction({
         type,
-        amount_sen: sen,
+        amount_sen: amountSen,
         merchant: merchant.trim() || (type === "income" ? "Income" : "Expense"),
         merchant_norm: merchantNorm,
         category_id: categoryId || null,
@@ -125,7 +125,7 @@ export default function CaptureReview({
         </div>
 
         <label className="mt-3 block text-xs text-gray-500">Amount (RM)</label>
-        <input type="text" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} className={field} />
+        <AmountInput sen={amountSen} onChangeSen={setAmountSen} className={field} />
 
         <label className="mt-3 block text-xs text-gray-500">Merchant</label>
         <input type="text" value={merchant} onChange={(e) => setMerchant(e.target.value)} className={field} />

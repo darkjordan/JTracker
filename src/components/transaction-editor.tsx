@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { parseAmountToSen, formatSen, normalizeMerchant } from "@/lib/money";
+import { normalizeMerchant } from "@/lib/money";
 import {
   updateTransaction,
   deleteTransaction,
 } from "@/lib/api/transactions";
 import { rememberMerchant } from "@/lib/api/merchant-memory";
+import AmountInput from "@/components/amount-input";
 import type { Category, Transaction, TxType } from "@/lib/api/types";
 import type { ReliefRow } from "@/lib/relief";
 
@@ -27,7 +28,7 @@ export default function TransactionEditor({
   onDeleted: (id: string) => void;
 }) {
   const [type, setType] = useState<TxType>(txn.type);
-  const [amount, setAmount] = useState(formatSen(txn.amount_sen));
+  const [amountSen, setAmountSen] = useState(txn.amount_sen);
   const [merchant, setMerchant] = useState(txn.merchant);
   const [categoryId, setCategoryId] = useState<string>(txn.category_id ?? "");
   const [reliefCode, setReliefCode] = useState<string>(txn.tax_relief_code ?? "");
@@ -39,8 +40,7 @@ export default function TransactionEditor({
   const options = categories.filter((c) => c.type === type || c.type === "both");
 
   async function save() {
-    const amountSen = parseAmountToSen(amount);
-    if (amountSen === null || amountSen <= 0) {
+    if (amountSen <= 0) {
       setError("Enter a valid amount.");
       return;
     }
@@ -110,11 +110,9 @@ export default function TransactionEditor({
         </div>
 
         <label className="mt-4 block text-xs text-gray-500">Amount (RM)</label>
-        <input
-          type="text"
-          inputMode="decimal"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+        <AmountInput
+          sen={amountSen}
+          onChangeSen={setAmountSen}
           className="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2.5 text-base outline-none focus:border-indigo-600"
         />
 

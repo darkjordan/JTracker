@@ -11,6 +11,7 @@ import TransactionList from "@/components/transaction-list";
 import FilterBar, { type TypeFilter } from "@/components/filter-bar";
 import TabBar, { type MainTab } from "@/components/tab-bar";
 import ScopeToggle, { type Scope } from "@/components/scope-toggle";
+import SuccessToast from "@/components/success-toast";
 import KpiTiles from "@/components/kpi-tiles";
 import CategoryDonut from "@/components/category-donut";
 import CashFlowBar from "@/components/cash-flow-bar";
@@ -38,6 +39,7 @@ import {
   monthsEndingAt,
   type MonthPoint,
 } from "@/lib/stats";
+import { formatRM } from "@/lib/money";
 import type { Category, Transaction } from "@/lib/api/types";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -64,6 +66,7 @@ export default function Dashboard() {
   const [showScopeToggle, setShowScopeToggle] = useState(false);
   const [scope, setScope] = useState<Scope>("household");
   const [tab, setTab] = useState<MainTab>("add");
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   useEffect(() => {
     // One-time read of the persisted preference (see money-privacy.tsx for why
@@ -222,18 +225,29 @@ export default function Dashboard() {
           <>
             <QuickEntry
               categories={categories}
-              onAdded={() => load(sel.y, sel.m, scope)}
+              onAdded={(t) => {
+                load(sel.y, sel.m, scope);
+                setToastMsg(
+                  `Added ${formatRM(t.amount_sen)} ${t.type === "income" ? "income" : "expense"}`
+                );
+              }}
             />
 
             <ScanButton
               categories={categories}
               reliefs={reliefs}
-              onSaved={() => load(sel.y, sel.m, scope)}
+              onSaved={() => {
+                load(sel.y, sel.m, scope);
+                setToastMsg("Saved from scan");
+              }}
             />
 
             <StatementImport
               categories={categories}
-              onCommitted={() => load(sel.y, sel.m, scope)}
+              onCommitted={() => {
+                load(sel.y, sel.m, scope);
+                setToastMsg("Statement imported");
+              }}
             />
           </>
         ) : (
@@ -369,6 +383,10 @@ export default function Dashboard() {
           />
         )}
       </main>
+
+      {toastMsg && (
+        <SuccessToast message={toastMsg} onDone={() => setToastMsg(null)} />
+      )}
 
       <TabBar tab={tab} onTab={setTab} />
     </>

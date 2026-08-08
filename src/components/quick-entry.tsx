@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { parseAmountToSen, formatSen, normalizeMerchant } from "@/lib/money";
+import { formatSen, normalizeMerchant } from "@/lib/money";
 import { createTransaction, todayLocal } from "@/lib/api/transactions";
 import { findOrCreateCategory } from "@/lib/api/categories";
+import AmountInput from "@/components/amount-input";
 import type { Category, Transaction, TxType } from "@/lib/api/types";
 
 const OTHER = "__other__";
@@ -21,7 +22,7 @@ export default function QuickEntry({
   onCategoryCreated?: () => void;
 }) {
   const [type, setType] = useState<TxType>("expense");
-  const [amount, setAmount] = useState("");
+  const [amountSen, setAmountSen] = useState(0);
   const [merchant, setMerchant] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [customCat, setCustomCat] = useState("");
@@ -29,7 +30,6 @@ export default function QuickEntry({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const amountSen = parseAmountToSen(amount);
   const isIncome = type === "income";
 
   const options = useMemo(
@@ -43,21 +43,14 @@ export default function QuickEntry({
     setCustomCat("");
   }
 
-  function onAmountChange(v: string) {
-    let cleaned = v.replace(/[^0-9.]/g, "");
-    const dot = cleaned.indexOf(".");
-    if (dot !== -1) {
-      const intPart = cleaned.slice(0, dot);
-      const dec = cleaned.slice(dot + 1).replace(/\./g, "").slice(0, 2);
-      cleaned = `${intPart}.${dec}`;
-    }
-    setAmount(cleaned);
+  function onAmountChange(v: number) {
+    setAmountSen(v);
     if (error) setError(null);
   }
 
   async function add() {
-    const sen = parseAmountToSen(amount);
-    if (sen === null || sen <= 0) {
+    const sen = amountSen;
+    if (sen <= 0) {
       setError("Enter an amount.");
       return;
     }
@@ -90,7 +83,7 @@ export default function QuickEntry({
         source: "manual",
       });
 
-      setAmount("");
+      setAmountSen(0);
       setMerchant("");
       setCategoryId("");
       setCustomCat("");
@@ -131,17 +124,14 @@ export default function QuickEntry({
         </button>
       </div>
 
-      {/* Amount — opens the number keypad on phones */}
+      {/* Amount — opens the number keypad on phones. Type digits only:
+          the last two are cents, e.g. 1005 → RM10.05. */}
       <div className="mt-3 flex items-center rounded-xl border border-gray-300 px-3 focus-within:border-indigo-600">
         <span className="mr-1.5 text-lg font-semibold text-gray-400">RM</span>
-        <input
-          type="text"
-          inputMode="decimal"
-          value={amount}
-          onChange={(e) => onAmountChange(e.target.value)}
+        <AmountInput
+          sen={amountSen}
+          onChangeSen={onAmountChange}
           onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="0.00"
-          aria-label="Amount"
           className="w-full bg-transparent py-2.5 text-2xl font-bold tabular-nums outline-none placeholder:text-gray-300"
         />
       </div>
