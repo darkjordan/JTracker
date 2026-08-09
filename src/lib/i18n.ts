@@ -92,6 +92,8 @@ const en: Dict = {
   "filter.toReview": "To review",
 
   // transaction editor
+  "txn.expense": "Expense",
+  "txn.income": "Income",
   "txn.amountRM": "Amount (RM)",
   "txn.merchant": "Merchant",
   "txn.category": "Category",
@@ -103,6 +105,8 @@ const en: Dict = {
   "txn.invalidAmount": "Enter a valid amount.",
   "txn.saveFailed": "Couldn't save. Try again.",
   "txn.deleteFailed": "Couldn't delete. Try again.",
+  "txn.markReviewed": "Mark reviewed",
+  "txn.markToReview": "Mark to review",
 
   // goals
   "goals.title": "Goals",
@@ -207,6 +211,8 @@ const zh: Dict = {
   "filter.allCategories": "所有类别",
   "filter.toReview": "待审核",
 
+  "txn.expense": "支出",
+  "txn.income": "收入",
   "txn.amountRM": "金额 (RM)",
   "txn.merchant": "商家",
   "txn.category": "类别",
@@ -218,6 +224,8 @@ const zh: Dict = {
   "txn.invalidAmount": "请输入有效金额。",
   "txn.saveFailed": "保存失败，请重试。",
   "txn.deleteFailed": "删除失败，请重试。",
+  "txn.markReviewed": "标记为已审核",
+  "txn.markToReview": "标记为待审核",
 
   "goals.title": "目标",
   "goals.addName": "目标名称（如 应急基金）",
@@ -319,6 +327,8 @@ const ms: Dict = {
   "filter.allCategories": "Semua kategori",
   "filter.toReview": "Untuk disemak",
 
+  "txn.expense": "Perbelanjaan",
+  "txn.income": "Pendapatan",
   "txn.amountRM": "Jumlah (RM)",
   "txn.merchant": "Peniaga",
   "txn.category": "Kategori",
@@ -330,6 +340,8 @@ const ms: Dict = {
   "txn.invalidAmount": "Masukkan jumlah yang sah.",
   "txn.saveFailed": "Gagal simpan. Cuba lagi.",
   "txn.deleteFailed": "Gagal padam. Cuba lagi.",
+  "txn.markReviewed": "Tanda disemak",
+  "txn.markToReview": "Tanda untuk disemak",
 
   "goals.title": "Matlamat",
   "goals.addName": "Nama matlamat (cth. Dana kecemasan)",
