@@ -10,8 +10,11 @@ import {
   createPromoCode,
   setPromoCodeActive,
   deletePromoCode,
+  listPromoRedemptions,
+  revokePromoRedemption,
   type AdSettings,
   type PromoCode,
+  type Redemption,
 } from "@/lib/api/promo";
 
 export default function AdminPage() {
@@ -28,8 +31,15 @@ export default function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const [redemptions, setRedemptions] = useState<Redemption[]>([]);
+  const [revoking, setRevoking] = useState<string | null>(null);
+
   const loadCodes = useCallback(async () => {
     setCodes(await listPromoCodes());
+  }, []);
+
+  const loadRedemptions = useCallback(async () => {
+    setRedemptions(await listPromoRedemptions());
   }, []);
 
   useEffect(() => {
@@ -41,10 +51,11 @@ export default function AdminPage() {
         await Promise.all([
           getAdSettings().then(setSettings),
           loadCodes(),
+          loadRedemptions(),
         ]);
       }
     })();
-  }, [loadCodes]);
+  }, [loadCodes, loadRedemptions]);
 
   async function saveSettings(patch: Partial<AdSettings>) {
     if (!settings) return;
@@ -86,8 +97,25 @@ export default function AdminPage() {
 
   async function removeCode(c: PromoCode) {
     if (!confirm(`Delete promo code "${c.code}"?`)) return;
-    await deletePromoCode(c.id);
-    await loadCodes();
+    try {
+      await deletePromoCode(c.id);
+      await loadCodes();
+    } catch {
+      setMsg(
+        `Can't delete "${c.code}" — someone has redeemed it. Revoke their access first.`
+      );
+    }
+  }
+
+  async function revoke(r: Redemption) {
+    if (!confirm(`Revoke ad-free access for ${r.email ?? r.user_id}?`)) return;
+    setRevoking(r.user_id);
+    try {
+      await revokePromoRedemption(r.user_id);
+      await Promise.all([loadRedemptions(), loadCodes()]);
+    } finally {
+      setRevoking(null);
+    }
   }
 
   if (!checked) {
@@ -237,6 +265,43 @@ export default function AdminPage() {
                 className="shrink-0 text-xs font-semibold text-red-600"
               >
                 Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Redemptions */}
+      <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
+        <h2 className="text-sm font-semibold text-gray-900">Redemptions</h2>
+        <p className="mt-1 text-xs text-gray-500">
+          Everyone who's currently ad-free via a promo code. Revoking removes
+          it immediately — ads resume for that account.
+        </p>
+        <ul className="mt-3 divide-y divide-gray-100">
+          {redemptions.length === 0 && (
+            <li className="py-4 text-center text-sm text-gray-400">
+              No redemptions yet.
+            </li>
+          )}
+          {redemptions.map((r) => (
+            <li key={r.user_id} className="flex items-center gap-3 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-gray-900">
+                  {r.email ?? r.user_id}
+                </p>
+                <p className="text-xs text-gray-400">
+                  code {r.code} ·{" "}
+                  {new Date(r.redeemed_at).toLocaleDateString("en-MY")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => revoke(r)}
+                disabled={revoking === r.user_id}
+                className="shrink-0 text-xs font-semibold text-red-600 disabled:opacity-50"
+              >
+                {revoking === r.user_id ? "…" : "Revoke"}
               </button>
             </li>
           ))}

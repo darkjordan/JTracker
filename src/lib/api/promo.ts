@@ -111,3 +111,25 @@ export async function deletePromoCode(id: string): Promise<void> {
   const { error } = await supabase.from("promo_codes").delete().eq("id", id);
   if (error) throw error;
 }
+
+export type Redemption = {
+  user_id: string;
+  email: string | null;
+  code: string;
+  redeemed_at: string;
+};
+
+export async function listPromoRedemptions(): Promise<Redemption[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("list_promo_redemptions");
+  if (error) throw error;
+  return (data ?? []) as Redemption[];
+}
+
+export async function revokePromoRedemption(userId: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("revoke_promo_redemption", {
+    p_user_id: userId,
+  });
+  if (error) throw error;
+}
