@@ -1,5 +1,7 @@
 // Pure net-worth math over manual account balances. Money stays in sen.
 
+import type { TFn } from "@/lib/i18n";
+
 export type AccountKind =
   | "cash"
   | "bank"
@@ -16,14 +18,9 @@ export type AccountRow = {
   sort_order: number;
 };
 
-export const KIND_LABELS: Record<AccountKind, string> = {
-  cash: "Cash",
-  bank: "Bank",
-  ewallet: "E-wallet",
-  investment: "Investment",
-  asset: "Asset",
-  liability: "Liability",
-};
+export function kindLabel(kind: AccountKind, t: TFn): string {
+  return t(`kind.${kind}`);
+}
 
 export const ACCOUNT_KINDS: AccountKind[] = [
   "cash",

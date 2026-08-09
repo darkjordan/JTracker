@@ -2,6 +2,8 @@
 // property, etc.) — separate ledger from lib/networth.ts's `accounts`.
 // Money stays in sen.
 
+import type { TFn } from "@/lib/i18n";
+
 export type ItemKind = "investment" | "epf" | "property" | "other" | "liability";
 
 export type NetWorthItem = {
@@ -12,13 +14,9 @@ export type NetWorthItem = {
   sort_order: number;
 };
 
-export const KIND_LABELS: Record<ItemKind, string> = {
-  investment: "Investment",
-  epf: "EPF",
-  property: "Property",
-  other: "Other",
-  liability: "Liability",
-};
+export function kindLabel(kind: ItemKind, t: TFn): string {
+  return t(`kind.${kind}`);
+}
 
 export const ITEM_KINDS: ItemKind[] = [
   "investment",

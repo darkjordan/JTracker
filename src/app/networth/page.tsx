@@ -20,11 +20,12 @@ import {
 } from "@/lib/api/networth-items";
 import {
   netWorth,
-  KIND_LABELS,
+  kindLabel,
   ITEM_KINDS,
   type NetWorthItem,
   type ItemKind,
 } from "@/lib/networth-items";
+import { useI18n } from "@/lib/i18n-client";
 
 type Status =
   | "loading"
@@ -48,6 +49,7 @@ export default function NetWorthPage() {
   const [kind, setKind] = useState<ItemKind>("investment");
   const [amountSen, setAmountSen] = useState(0);
   const [balEdits, setBalEdits] = useState<Record<string, number>>({});
+  const { t } = useI18n();
 
   const loadItems = useCallback(async () => {
     setItemsLoading(true);
@@ -98,7 +100,7 @@ export default function NetWorthPage() {
     }
     if (status === "confirm_setup") {
       if (entered !== confirmFirst) {
-        setPinError("PINs didn’t match — try again.");
+        setPinError(t("networth.pinsNoMatch"));
         setPin("");
         setConfirmFirst("");
         setStatus("setup");
@@ -111,7 +113,7 @@ export default function NetWorthPage() {
         setStatus("unlocked");
         await loadItems();
       } catch {
-        setPinError("Couldn’t save PIN. Try again.");
+        setPinError(t("networth.pinSaveFailed"));
         setPin("");
         setStatus("setup");
       } finally {
@@ -134,11 +136,11 @@ export default function NetWorthPage() {
           setPin("");
           setStatus("setup");
         } else {
-          setPinError("Wrong PIN.");
+          setPinError(t("networth.wrongPin"));
           setPin("");
         }
       } catch {
-        setPinError("Something went wrong. Try again.");
+        setPinError(t("networth.somethingWrong"));
         setPin("");
       } finally {
         setBusy(false);
@@ -154,12 +156,7 @@ export default function NetWorthPage() {
   }
 
   async function forgotPin() {
-    if (
-      !confirm(
-        "This signs you out — you'll need to sign back in with Google before setting a new PIN. Continue?"
-      )
-    )
-      return;
+    if (!confirm(t("networth.signOutConfirm"))) return;
     const supabase = createClient();
     await supabase.auth.signOut();
     window.location.href = `/login?next=${encodeURIComponent("/networth?resetpin=1")}`;
@@ -184,7 +181,7 @@ export default function NetWorthPage() {
   }
 
   async function remove(it: NetWorthItem) {
-    if (!confirm(`Delete "${it.name}"?`)) return;
+    if (!confirm(t("networth.deleteConfirm", { name: it.name }))) return;
     await deleteNetWorthItem(it.id);
     await loadItems();
   }
@@ -193,32 +190,31 @@ export default function NetWorthPage() {
     <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight text-gray-900">
-          Net Worth
+          {t("networth.title")}
         </h1>
         <Link href="/" className="text-sm font-medium text-indigo-600">
-          Done
+          {t("done")}
         </Link>
       </header>
 
       {status === "loading" && (
-        <p className="py-10 text-center text-sm text-gray-400">Loading…</p>
+        <p className="py-10 text-center text-sm text-gray-400">{t("loading")}</p>
       )}
 
       {status === "signin_required" && (
         <section className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-black/5">
           <p className="text-3xl">🔒</p>
           <p className="mt-2 text-sm font-medium text-gray-900">
-            Sign in to use Net Worth
+            {t("networth.signInRequired")}
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            Net Worth is protected by a PIN tied to your account, so it needs
-            a real sign-in — not an anonymous session.
+            {t("networth.signInRequiredHint")}
           </p>
           <Link
             href={`/login?next=${encodeURIComponent("/networth")}`}
             className="mt-4 block w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white"
           >
-            Sign in with Google
+            {t("settings.signInGoogle")}
           </Link>
         </section>
       )}
@@ -227,11 +223,11 @@ export default function NetWorthPage() {
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
           <p className="text-center text-sm font-medium text-gray-900">
             {status === "setup"
-              ? "Set up a 4-digit PIN"
-              : "Re-enter your PIN to confirm"}
+              ? t("networth.setupPin")
+              : t("networth.confirmPin")}
           </p>
           <p className="mt-1 text-center text-xs text-gray-500">
-            You’ll need this every time you open Net Worth.
+            {t("networth.pinEveryTime")}
           </p>
           <div className="mt-5">
             <PinPad value={pin} onChange={onPinChange} error={!!pinError} />
@@ -245,7 +241,7 @@ export default function NetWorthPage() {
       {status === "enter_pin" && (
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
           <p className="text-center text-sm font-medium text-gray-900">
-            Enter your PIN
+            {t("networth.enterPin")}
           </p>
           <div className="mt-5">
             <PinPad value={pin} onChange={onPinChange} error={!!pinError} />
@@ -258,7 +254,7 @@ export default function NetWorthPage() {
             onClick={forgotPin}
             className="mt-5 block w-full text-center text-xs font-medium text-gray-400"
           >
-            Forgot PIN?
+            {t("networth.forgotPin")}
           </button>
         </section>
       )}
@@ -267,17 +263,17 @@ export default function NetWorthPage() {
         <section className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-black/5">
           <p className="text-3xl">⏳</p>
           <p className="mt-2 text-sm font-medium text-gray-900">
-            Too many attempts
+            {t("networth.tooManyAttempts")}
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            Try again in a few minutes.
+            {t("networth.tryAgainLater")}
           </p>
           <button
             type="button"
             onClick={forgotPin}
             className="mt-4 block w-full text-center text-xs font-medium text-gray-400"
           >
-            Forgot PIN?
+            {t("networth.forgotPin")}
           </button>
         </section>
       )}
@@ -287,7 +283,7 @@ export default function NetWorthPage() {
           <section className="mb-4 rounded-2xl bg-indigo-600 p-4 text-white shadow-sm">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs text-indigo-100">Net worth</p>
+                <p className="text-xs text-indigo-100">{t("accounts.netWorth")}</p>
                 <p
                   className={`mt-1 text-3xl font-bold tabular-nums ${
                     nw.netSen < 0 ? "text-red-200" : ""
@@ -301,12 +297,12 @@ export default function NetWorthPage() {
                 onClick={lock}
                 className="shrink-0 rounded-lg bg-indigo-500 px-2.5 py-1 text-xs font-medium text-white"
               >
-                🔒 Lock
+                {t("networth.lock")}
               </button>
             </div>
             <div className="mt-2 flex gap-4 text-xs text-indigo-100">
-              <span>Assets {formatSen(nw.assetsSen)}</span>
-              <span>Liabilities {formatSen(nw.liabilitiesSen)}</span>
+              <span>{t("accounts.assets", { amount: formatSen(nw.assetsSen) })}</span>
+              <span>{t("accounts.liabilities", { amount: formatSen(nw.liabilitiesSen) })}</span>
             </div>
           </section>
 
@@ -315,7 +311,7 @@ export default function NetWorthPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Item name (e.g. ASB, EPF, Tesla stock)"
+              placeholder={t("networth.itemNamePlaceholder")}
               className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-base outline-none focus:border-indigo-600"
             />
             <div className="mt-2 flex gap-2">
@@ -326,7 +322,7 @@ export default function NetWorthPage() {
               >
                 {ITEM_KINDS.map((k) => (
                   <option key={k} value={k}>
-                    {KIND_LABELS[k]}
+                    {kindLabel(k, t)}
                   </option>
                 ))}
               </select>
@@ -345,16 +341,15 @@ export default function NetWorthPage() {
               disabled={!name.trim() || amountSen <= 0}
               className="mt-2 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
-              Add item
+              {t("networth.addItem")}
             </button>
           </section>
 
           {itemsLoading ? (
-            <p className="py-10 text-center text-sm text-gray-400">Loading…</p>
+            <p className="py-10 text-center text-sm text-gray-400">{t("loading")}</p>
           ) : items.length === 0 ? (
             <p className="py-10 text-center text-sm text-gray-500">
-              No net worth items yet. Add investments, EPF, property, or a
-              loan above.
+              {t("networth.noItems")}
             </p>
           ) : (
             <ul className="space-y-2">
@@ -368,8 +363,8 @@ export default function NetWorthPage() {
                       {it.name}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {KIND_LABELS[it.kind]}
-                      {it.kind === "liability" && " · owed"}
+                      {kindLabel(it.kind, t)}
+                      {it.kind === "liability" && t("accounts.owed")}
                     </p>
                   </div>
                   <div className="flex items-center rounded-lg border border-gray-200 px-2">
@@ -380,7 +375,7 @@ export default function NetWorthPage() {
                         setBalEdits((m) => ({ ...m, [it.id]: v }))
                       }
                       className="w-20 bg-transparent py-1 text-right text-sm tabular-nums outline-none"
-                      ariaLabel={`${it.name} balance`}
+                      ariaLabel={t("networth.balanceLabel", { name: it.name })}
                     />
                   </div>
                   <button
@@ -388,13 +383,13 @@ export default function NetWorthPage() {
                     onClick={() => saveBalance(it)}
                     className="shrink-0 text-xs font-medium text-indigo-600"
                   >
-                    Save
+                    {t("save")}
                   </button>
                   <button
                     type="button"
                     onClick={() => remove(it)}
                     className="shrink-0 text-gray-300 hover:text-red-500"
-                    aria-label="Delete item"
+                    aria-label={t("networth.deleteItem")}
                   >
                     ✕
                   </button>
