@@ -4,7 +4,7 @@ import "./globals.css";
 import { MoneyPrivacyProvider } from "@/components/money-privacy";
 import ServiceWorker from "./service-worker";
 import { LanguageProvider } from "@/lib/i18n-client";
-import { getLang } from "@/lib/i18n-server";
+import { getLang, getServerT } from "@/lib/i18n-server";
 
 const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 const MEDIANET_CLIENT_ID = process.env.NEXT_PUBLIC_MEDIANET_CLIENT_ID;
@@ -19,19 +19,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "JTracker",
-  description: "Personal money tracker — income, expenses, and tax relief.",
-  icons: { apple: "/apple-icon.png" },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerT();
+  return {
     title: "JTracker",
-  },
-  other: ADSENSE_CLIENT_ID
-    ? { "google-adsense-account": ADSENSE_CLIENT_ID }
-    : {},
-};
+    description: t("app.metaDescription"),
+    icons: { apple: "/apple-icon.png" },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: "JTracker",
+    },
+    other: ADSENSE_CLIENT_ID
+      ? { "google-adsense-account": ADSENSE_CLIENT_ID }
+      : {},
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#4f46e5",

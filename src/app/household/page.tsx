@@ -64,7 +64,7 @@ export default function HouseholdPage() {
     try {
       const url = await createInviteUrl();
       if (navigator.share) {
-        await navigator.share({ title: "Join my JTracker household", url });
+        await navigator.share({ title: t("household.shareTitle"), url });
       } else {
         await navigator.clipboard.writeText(url);
         setMsg(t("household.inviteLinkCopied"));

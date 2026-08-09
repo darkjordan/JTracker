@@ -427,6 +427,10 @@ const en: Dict = {
   "admin.revokeConfirm": "Revoke ad-free access for {who}?",
   "admin.createSlotFailed": "Couldn't create that placement — it may already exist.",
   "admin.deleteSlotConfirm": "Delete ad placement \"{placement}\"?",
+  "privacy.showAmounts": "Show amounts",
+  "privacy.hideAmounts": "Hide amounts",
+  "household.shareTitle": "Join my JTracker household",
+  "app.metaDescription": "Personal money tracker — income, expenses, and tax relief.",
 };
 
 const zh: Dict = {
@@ -799,6 +803,10 @@ const zh: Dict = {
   "admin.revokeConfirm": "撤销 {who} 的无广告权益？",
   "admin.createSlotFailed": "创建失败 — 该广告位可能已存在。",
   "admin.deleteSlotConfirm": "删除广告位「{placement}」？",
+  "privacy.showAmounts": "显示金额",
+  "privacy.hideAmounts": "隐藏金额",
+  "household.shareTitle": "加入我的 JTracker 家庭",
+  "app.metaDescription": "个人记账工具 — 收入、支出与税务减免。",
 };
 
 const ms: Dict = {
@@ -1189,6 +1197,10 @@ const ms: Dict = {
   "admin.revokeConfirm": "Batalkan akses bebas iklan untuk {who}?",
   "admin.createSlotFailed": "Gagal cipta penempatan itu — mungkin sudah wujud.",
   "admin.deleteSlotConfirm": "Padam penempatan iklan \"{placement}\"?",
+  "privacy.showAmounts": "Tunjuk jumlah",
+  "privacy.hideAmounts": "Sembunyi jumlah",
+  "household.shareTitle": "Sertai isi rumah JTracker saya",
+  "app.metaDescription": "Penjejak wang peribadi — pendapatan, perbelanjaan dan pelepasan cukai.",
 };
 
 const messages: Record<Lang, Dict> = { en, zh, ms };

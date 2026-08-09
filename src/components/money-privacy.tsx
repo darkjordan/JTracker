@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useI18n } from "@/lib/i18n-client";
 
 const KEY = "jtracker:hideAmounts";
 const MASK = "••••";
@@ -55,11 +56,12 @@ export function mask(hidden: boolean, formatted: string): string {
 /** Eye toggle button for the header. */
 export function PrivacyToggle() {
   const { hidden, toggle } = useMoneyPrivacy();
+  const { t } = useI18n();
   return (
     <button
       type="button"
       onClick={toggle}
-      aria-label={hidden ? "Show amounts" : "Hide amounts"}
+      aria-label={hidden ? t("privacy.showAmounts") : t("privacy.hideAmounts")}
       aria-pressed={hidden}
       className="rounded-lg p-1.5 text-gray-500 active:bg-gray-100"
     >
