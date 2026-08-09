@@ -115,6 +115,32 @@ const en: Dict = {
   "review.remembered": "remembered",
   "review.saveTransaction": "Save transaction",
 
+  // statement import
+  "import.dismiss": "Dismiss",
+  "import.beforeUpload": "Before you upload",
+  "import.privacyNotice":
+    "Your statement is sent to Google Gemini (free tier) to read the transactions — Google may use free-tier data to improve its products. Consider cropping or hiding your account number first.",
+  "import.dontShowAgain": "Don't show this again",
+  "import.choosePdf": "Choose PDF",
+  "import.reading": "Reading your statement… this takes ~15s.",
+  "import.reviewTitle": "Review import",
+  "import.newCount": "{n} new",
+  "import.duplicateCount": " · {n} duplicate",
+  "import.zeroSkippedCount": " · {n} zero-value skipped",
+  "import.reconcileWarning":
+    "⚠ Balances don't reconcile ({computed} vs closing {closing}). Some rows may be misread — check before saving.",
+  "import.alreadyImported": " · already imported",
+  "import.importing": "Importing…",
+  "import.importOne": "Import 1 transaction",
+  "import.importMany": "Import {n} transactions",
+  "import.dupSavedRepeat":
+    "Some of these transactions are already saved. Close this and import again — the repeats will be greyed out.",
+  "import.zeroInvalid":
+    "One of the rows has an amount of zero or is otherwise invalid. Untick it and try again.",
+  "import.sessionExpired": "Your session expired. Reload the page and sign in again.",
+  "import.genericErrorWithMsg": "Couldn't import: {msg}",
+  "import.genericError": "Couldn't import. Try again.",
+
   // goals
   "goals.title": "Goals",
   "goals.addName": "Goal name (e.g. Emergency fund)",
@@ -240,6 +266,29 @@ const zh: Dict = {
   "review.remembered": "已记住",
   "review.saveTransaction": "保存交易",
 
+  "import.dismiss": "关闭",
+  "import.beforeUpload": "上传前须知",
+  "import.privacyNotice":
+    "您的对账单将发送至 Google Gemini（免费版）以读取交易内容 — Google 可能会将免费版数据用于改进其产品。建议先裁剪或隐藏您的账号。",
+  "import.dontShowAgain": "不再显示",
+  "import.choosePdf": "选择 PDF",
+  "import.reading": "正在读取您的对账单… 大约需要 15 秒。",
+  "import.reviewTitle": "查看导入内容",
+  "import.newCount": "{n} 项新增",
+  "import.duplicateCount": " · {n} 项重复",
+  "import.zeroSkippedCount": " · 已跳过 {n} 项零金额",
+  "import.reconcileWarning":
+    "⚠ 余额未能对账（计算值 {computed}，期末余额 {closing}）。部分行可能被误读 — 保存前请检查。",
+  "import.alreadyImported": " · 已导入",
+  "import.importing": "导入中…",
+  "import.importOne": "导入 1 笔交易",
+  "import.importMany": "导入 {n} 笔交易",
+  "import.dupSavedRepeat": "部分交易已保存过。请关闭后重新导入 — 重复项将显示为灰色。",
+  "import.zeroInvalid": "其中一行金额为零或无效。取消勾选后重试。",
+  "import.sessionExpired": "您的登录已过期。请重新加载页面并重新登录。",
+  "import.genericErrorWithMsg": "导入失败：{msg}",
+  "import.genericError": "导入失败，请重试。",
+
   "goals.title": "目标",
   "goals.addName": "目标名称（如 应急基金）",
   "goals.targetAmount": "目标金额",
@@ -361,6 +410,30 @@ const ms: Dict = {
   "review.checkThenSave": "Semak, kemudian simpan",
   "review.remembered": "diingati",
   "review.saveTransaction": "Simpan transaksi",
+
+  "import.dismiss": "Tutup",
+  "import.beforeUpload": "Sebelum anda muat naik",
+  "import.privacyNotice":
+    "Penyata anda dihantar ke Google Gemini (tahap percuma) untuk membaca transaksi — Google mungkin menggunakan data tahap percuma untuk menambah baik produknya. Pertimbangkan untuk memotong atau menyembunyikan nombor akaun anda dahulu.",
+  "import.dontShowAgain": "Jangan tunjuk lagi",
+  "import.choosePdf": "Pilih PDF",
+  "import.reading": "Membaca penyata anda… ini mengambil masa ~15 saat.",
+  "import.reviewTitle": "Semak import",
+  "import.newCount": "{n} baharu",
+  "import.duplicateCount": " · {n} pendua",
+  "import.zeroSkippedCount": " · {n} nilai sifar dilangkau",
+  "import.reconcileWarning":
+    "⚠ Baki tidak sepadan ({computed} berbanding penutup {closing}). Sesetengah baris mungkin salah baca — semak sebelum simpan.",
+  "import.alreadyImported": " · sudah diimport",
+  "import.importing": "Mengimport…",
+  "import.importOne": "Import 1 transaksi",
+  "import.importMany": "Import {n} transaksi",
+  "import.dupSavedRepeat":
+    "Sesetengah transaksi ini sudah disimpan. Tutup dan import semula — yang berulang akan kelabu.",
+  "import.zeroInvalid": "Salah satu baris mempunyai jumlah sifar atau tidak sah. Nyahtanda dan cuba lagi.",
+  "import.sessionExpired": "Sesi anda telah tamat. Muat semula halaman dan log masuk semula.",
+  "import.genericErrorWithMsg": "Gagal import: {msg}",
+  "import.genericError": "Gagal import. Cuba lagi.",
 
   "goals.title": "Matlamat",
   "goals.addName": "Nama matlamat (cth. Dana kecemasan)",

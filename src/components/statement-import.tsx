@@ -14,6 +14,8 @@ import {
   commitImport,
 } from "@/lib/api/imports";
 import { getMerchantMemories, rememberMerchant } from "@/lib/api/merchant-memory";
+import { useI18n } from "@/lib/i18n-client";
+import type { TFn } from "@/lib/i18n";
 import type { Category, TxType } from "@/lib/api/types";
 
 type Row = {
@@ -41,17 +43,17 @@ const ACK_KEY = "jtracker:pdfPrivacyAck";
 const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
 
 /** Turn a PostgREST failure into something the user can act on. */
-export function commitErrorMessage(e: unknown): string {
+export function commitErrorMessage(e: unknown, t: TFn): string {
   const err = e as { message?: string; code?: string } | null;
   const code = err?.code;
   const msg = err?.message ?? "";
   if (code === "23505" || /duplicate key/i.test(msg))
-    return "Some of these transactions are already saved. Close this and import again — the repeats will be greyed out.";
+    return t("import.dupSavedRepeat");
   if (code === "23514" || /violates check constraint/i.test(msg))
-    return "One of the rows has an amount of zero or is otherwise invalid. Untick it and try again.";
+    return t("import.zeroInvalid");
   if (code === "42501" || /row-level security/i.test(msg))
-    return "Your session expired. Reload the page and sign in again.";
-  return msg ? `Couldn’t import: ${msg}` : "Couldn’t import. Try again.";
+    return t("import.sessionExpired");
+  return msg ? t("import.genericErrorWithMsg", { msg }) : t("import.genericError");
 }
 
 export default function StatementImport({
@@ -70,6 +72,7 @@ export default function StatementImport({
   const [committing, setCommitting] = useState(false);
   const [dontShow, setDontShow] = useState(false);
   const [skipped, setSkipped] = useState(0);
+  const { t } = useI18n();
 
   const catName = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
@@ -245,7 +248,7 @@ export default function StatementImport({
     } catch (e) {
       // Never swallow this: a constraint violation here is silent otherwise,
       // and "Try again" sends the user round a loop that cannot succeed.
-      setError(commitErrorMessage(e));
+      setError(commitErrorMessage(e, t));
       setCommitting(false);
     }
   }
@@ -257,7 +260,7 @@ export default function StatementImport({
         onClick={start}
         className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white py-2.5 text-sm font-semibold text-gray-700 active:scale-[0.99]"
       >
-        📄 Import bank statement (PDF)
+        {t("entry.importStatement")}
       </button>
       <input
         ref={inputRef}
@@ -272,7 +275,7 @@ export default function StatementImport({
           <button
             type="button"
             onClick={() => setError(null)}
-            aria-label="Dismiss"
+            aria-label={t("import.dismiss")}
             className="shrink-0 text-red-400"
           >
             ✕
@@ -283,22 +286,20 @@ export default function StatementImport({
       {/* Privacy notice */}
       {phase === "privacy" && (
         <Sheet onClose={() => setPhase("idle")}>
-          <h2 className="text-base font-semibold text-gray-900">Before you upload</h2>
+          <h2 className="text-base font-semibold text-gray-900">{t("import.beforeUpload")}</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Your statement is sent to Google Gemini (free tier) to read the
-            transactions — Google may use free-tier data to improve its products.
-            Consider cropping or hiding your account number first.
+            {t("import.privacyNotice")}
           </p>
           <label className="mt-3 flex items-center gap-2 text-sm text-gray-600">
             <input type="checkbox" checked={dontShow} onChange={(e) => setDontShow(e.target.checked)} />
-            Don’t show this again
+            {t("import.dontShowAgain")}
           </label>
           <div className="mt-4 flex gap-2">
             <button type="button" onClick={() => setPhase("idle")} className="flex-1 rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-600">
-              Cancel
+              {t("cancel")}
             </button>
             <button type="button" onClick={proceed} className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white">
-              Choose PDF
+              {t("import.choosePdf")}
             </button>
           </div>
         </Sheet>
@@ -308,7 +309,7 @@ export default function StatementImport({
       {phase === "parsing" && (
         <Sheet onClose={() => {}}>
           <p className="py-6 text-center text-sm text-gray-600">
-            Reading your statement… this takes ~15s.
+            {t("import.reading")}
           </p>
         </Sheet>
       )}
@@ -317,17 +318,20 @@ export default function StatementImport({
       {phase === "review" && meta && (
         <Sheet onClose={reset} tall>
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-gray-900">Review import</h2>
+            <h2 className="text-base font-semibold text-gray-900">{t("import.reviewTitle")}</h2>
             <span className="text-xs text-gray-500">
-              {newCount} new{dupCount ? ` · ${dupCount} duplicate` : ""}
-              {skipped ? ` · ${skipped} zero-value skipped` : ""}
+              {t("import.newCount", { n: newCount })}
+              {dupCount ? t("import.duplicateCount", { n: dupCount }) : ""}
+              {skipped ? t("import.zeroSkippedCount", { n: skipped }) : ""}
             </span>
           </div>
 
           {recon && !recon.ok && (
             <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              ⚠ Balances don’t reconcile ({formatRM(recon.computedSen)} vs closing{" "}
-              {formatRM(meta.closingSen ?? 0)}). Some rows may be misread — check before saving.
+              {t("import.reconcileWarning", {
+                computed: formatRM(recon.computedSen),
+                closing: formatRM(meta.closingSen ?? 0),
+              })}
             </p>
           )}
 
@@ -351,7 +355,7 @@ export default function StatementImport({
                   <p className="truncate text-sm font-medium text-gray-900">{r.merchant}</p>
                   <p className="text-xs text-gray-400">
                     {r.occurred_at}
-                    {r.dupReason === "existing" && " · already imported"}
+                    {r.dupReason === "existing" && t("import.alreadyImported")}
                   </p>
                   {!r.dup && (
                     <select
@@ -363,7 +367,7 @@ export default function StatementImport({
                       }
                       className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs outline-none"
                     >
-                      <option value="">Uncategorized</option>
+                      <option value="">{t("entry.uncategorized")}</option>
                       {categories
                         .filter((c) => c.type === r.type || c.type === "both")
                         .map((c) => (
@@ -395,7 +399,7 @@ export default function StatementImport({
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
           <div className="mt-3 flex gap-2">
             <button type="button" onClick={reset} disabled={committing} className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-600 disabled:opacity-50">
-              Cancel
+              {t("cancel")}
             </button>
             <button
               type="button"
@@ -403,7 +407,11 @@ export default function StatementImport({
               disabled={committing || newCount === 0}
               className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {committing ? "Importing…" : `Import ${newCount} transaction${newCount === 1 ? "" : "s"}`}
+              {committing
+                ? t("import.importing")
+                : newCount === 1
+                  ? t("import.importOne")
+                  : t("import.importMany", { n: newCount })}
             </button>
           </div>
         </Sheet>
