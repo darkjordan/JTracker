@@ -1,5 +1,6 @@
 import Link from "next/link";
 import LoginForm from "./login-form";
+import { getServerT } from "@/lib/i18n-server";
 
 export default async function LoginPage({
   searchParams,
@@ -7,6 +8,7 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const { error, next } = await searchParams;
+  const t = await getServerT();
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10">
@@ -15,7 +17,7 @@ export default async function LoginPage({
           JTracker
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Sign in to keep your data safe across devices.
+          {t("login.tagline")}
         </p>
       </div>
 
@@ -25,7 +27,7 @@ export default async function LoginPage({
         href="/"
         className="mt-6 text-center text-sm font-medium text-gray-500"
       >
-        ← Back
+        {t("login.back")}
       </Link>
     </main>
   );

@@ -1,5 +1,7 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n-client";
+
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
 
 // Controlled 4-digit PIN entry: dot progress indicator + on-screen keypad
@@ -13,6 +15,7 @@ export default function PinPad({
   onChange: (v: string) => void;
   error?: boolean;
 }) {
+  const { t } = useI18n();
   function press(k: string) {
     if (k === "⌫") {
       onChange(value.slice(0, -1));
@@ -26,7 +29,7 @@ export default function PinPad({
       <div
         className="flex justify-center gap-3"
         role="status"
-        aria-label={`${value.length} of 4 digits entered`}
+        aria-label={t("pinpad.digitsEntered", { n: value.length })}
       >
         {[0, 1, 2, 3].map((i) => (
           <span
@@ -51,7 +54,7 @@ export default function PinPad({
               key={i}
               type="button"
               onClick={() => press(k)}
-              aria-label={k === "⌫" ? "Backspace" : `Digit ${k}`}
+              aria-label={k === "⌫" ? t("pinpad.backspace") : t("pinpad.digit", { k })}
               className="rounded-2xl bg-white py-4 text-xl font-semibold text-gray-800 shadow-sm ring-1 ring-black/5 active:bg-gray-100"
             >
               {k}

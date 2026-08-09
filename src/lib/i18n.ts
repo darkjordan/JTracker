@@ -276,6 +276,18 @@ const en: Dict = {
   "networth.somethingWrong": "Something went wrong. Try again.",
   "networth.signOutConfirm":
     "This signs you out — you'll need to sign back in with Google before setting a new PIN. Continue?",
+  "pinpad.digitsEntered": "{n} of 4 digits entered",
+  "pinpad.backspace": "Backspace",
+  "pinpad.digit": "Digit {k}",
+
+  // login
+  "login.tagline": "Sign in to keep your data safe across devices.",
+  "login.back": "← Back",
+  "login.linkedElsewhere": "That Google account already has a JTracker account — tap to sign in to it.",
+  "login.authFailed": "Sign-in didn't complete. Please try again.",
+  "login.redirecting": "Redirecting…",
+  "login.continueGoogle": "Continue with Google",
+  "login.noPasswords": "Signing in keeps your data across devices. No passwords.",
 };
 
 const zh: Dict = {
@@ -514,6 +526,17 @@ const zh: Dict = {
   "networth.wrongPin": "PIN 码错误。",
   "networth.somethingWrong": "出现问题，请重试。",
   "networth.signOutConfirm": "这将退出登录 — 您需要重新使用 Google 登录才能设置新的 PIN 码。是否继续？",
+  "pinpad.digitsEntered": "已输入 {n}/4 位数字",
+  "pinpad.backspace": "退格",
+  "pinpad.digit": "数字 {k}",
+
+  "login.tagline": "登录以在各设备间安全保存您的数据。",
+  "login.back": "← 返回",
+  "login.linkedElsewhere": "该 Google 账号已绑定 JTracker 账号 — 点击以登录该账号。",
+  "login.authFailed": "登录未完成，请重试。",
+  "login.redirecting": "跳转中…",
+  "login.continueGoogle": "使用 Google 继续",
+  "login.noPasswords": "登录后可在各设备间保存您的数据，无需密码。",
 };
 
 const ms: Dict = {
@@ -759,6 +782,17 @@ const ms: Dict = {
   "networth.somethingWrong": "Sesuatu tidak kena. Cuba lagi.",
   "networth.signOutConfirm":
     "Ini akan log keluar anda — anda perlu log masuk semula dengan Google sebelum menetapkan PIN baharu. Teruskan?",
+  "pinpad.digitsEntered": "{n} daripada 4 digit dimasukkan",
+  "pinpad.backspace": "Backspace",
+  "pinpad.digit": "Digit {k}",
+
+  "login.tagline": "Log masuk untuk simpan data anda dengan selamat merentas peranti.",
+  "login.back": "← Kembali",
+  "login.linkedElsewhere": "Akaun Google itu sudah mempunyai akaun JTracker — ketik untuk log masuk ke akaun itu.",
+  "login.authFailed": "Log masuk tidak selesai. Sila cuba lagi.",
+  "login.redirecting": "Mengalihkan…",
+  "login.continueGoogle": "Teruskan dengan Google",
+  "login.noPasswords": "Log masuk menyimpan data anda merentas peranti. Tiada kata laluan.",
 };
 
 const messages: Record<Lang, Dict> = { en, zh, ms };

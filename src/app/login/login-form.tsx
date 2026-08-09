@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n-client";
 
 export default function LoginForm({
   errorMessage,
@@ -10,6 +11,7 @@ export default function LoginForm({
   errorMessage?: string;
   next?: string;
 }) {
+  const { t } = useI18n();
   // If a previous *link* attempt failed because the Google account already
   // belongs to someone, fall back to a normal sign-in on the next tap.
   const linkedElsewhere =
@@ -19,9 +21,9 @@ export default function LoginForm({
   const [error, setError] = useState<string | null>(
     errorMessage
       ? linkedElsewhere
-        ? "That Google account already has a JTracker account — tap to sign in to it."
+        ? t("login.linkedElsewhere")
         : errorMessage === "auth"
-          ? "Sign-in didn’t complete. Please try again."
+          ? t("login.authFailed")
           : errorMessage
       : null
   );
@@ -68,11 +70,11 @@ export default function LoginForm({
         className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white py-2.5 font-semibold text-gray-700 transition active:scale-[0.99] hover:bg-gray-50 disabled:opacity-60"
       >
         <GoogleMark />
-        {status === "redirecting" ? "Redirecting…" : "Continue with Google"}
+        {status === "redirecting" ? t("login.redirecting") : t("login.continueGoogle")}
       </button>
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       <p className="mt-3 text-center text-xs text-gray-500">
-        Signing in keeps your data across devices. No passwords.
+        {t("login.noPasswords")}
       </p>
     </div>
   );
