@@ -431,6 +431,12 @@ const en: Dict = {
   "privacy.hideAmounts": "Hide amounts",
   "household.shareTitle": "Join my JTracker household",
   "app.metaDescription": "Personal money tracker — income, expenses, and tax relief.",
+
+  // SSO nudge
+  "nudge.title": "Keep your data safe",
+  "nudge.body":
+    "You're using JTracker anonymously — inactive anonymous data is eventually deleted. Sign in with Google to keep it for good.",
+  "nudge.dismiss": "Dismiss",
 };
 
 const zh: Dict = {
@@ -807,6 +813,10 @@ const zh: Dict = {
   "privacy.hideAmounts": "隐藏金额",
   "household.shareTitle": "加入我的 JTracker 家庭",
   "app.metaDescription": "个人记账工具 — 收入、支出与税务减免。",
+
+  "nudge.title": "保护您的数据",
+  "nudge.body": "您正在匿名使用 JTracker — 长期未使用的匿名数据最终会被删除。使用 Google 登录以永久保存数据。",
+  "nudge.dismiss": "关闭",
 };
 
 const ms: Dict = {
@@ -1201,6 +1211,11 @@ const ms: Dict = {
   "privacy.hideAmounts": "Sembunyi jumlah",
   "household.shareTitle": "Sertai isi rumah JTracker saya",
   "app.metaDescription": "Penjejak wang peribadi — pendapatan, perbelanjaan dan pelepasan cukai.",
+
+  "nudge.title": "Selamatkan data anda",
+  "nudge.body":
+    "Anda menggunakan JTracker secara tanpa nama — data tanpa nama yang tidak aktif akhirnya akan dipadam. Log masuk dengan Google untuk menyimpannya secara kekal.",
+  "nudge.dismiss": "Tutup",
 };
 
 const messages: Record<Lang, Dict> = { en, zh, ms };

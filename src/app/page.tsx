@@ -6,6 +6,7 @@ import QuickEntry from "@/components/quick-entry";
 import ScanButton from "@/components/scan-button";
 import StatementImport from "@/components/statement-import";
 import InstallPrompt from "@/components/install-prompt";
+import SsoNudge from "@/components/sso-nudge";
 import TransactionEditor from "@/components/transaction-editor";
 import TransactionList from "@/components/transaction-list";
 import FilterBar, { type TypeFilter } from "@/components/filter-bar";
@@ -72,6 +73,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState<MainTab>("add");
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showAd, setShowAd] = useState(false);
+  const [isAnon, setIsAnon] = useState(false);
   const { t } = useI18n();
 
   useEffect(() => {
@@ -118,6 +120,7 @@ export default function Dashboard() {
         getAdEligibility(),
       ]);
       setShowAd(adEligible);
+      setIsAnon(!!user?.is_anonymous);
       // Only offer the scope toggle (and tag transactions by member) when
       // actually sharing with >1 APPROVED member — pending requesters have
       // no shared data yet.
@@ -230,6 +233,8 @@ export default function Dashboard() {
         </header>
 
         <InstallPrompt />
+
+        {isAnon && txns.length > 0 && <SsoNudge />}
 
         {tab === "add" ? (
           <>
