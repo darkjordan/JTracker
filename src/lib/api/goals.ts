@@ -1,12 +1,14 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Goal } from "@/lib/goals";
 
-const COLS = "id, name, emoji, target_sen, target_date, current_sen, sort_order";
+const COLS = "id, name, emoji, target_sen, target_date, base_sen, current_sen, sort_order";
 
+/** Reads from the goals_with_progress view — current_sen is computed there
+ * (base_sen + tagged income transactions), never stored directly. */
 export async function listGoals(): Promise<Goal[]> {
   const supabase = createClient();
   const { data, error } = await supabase
-    .from("goals")
+    .from("goals_with_progress")
     .select(COLS)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
@@ -37,7 +39,7 @@ export async function updateGoal(
     emoji: string;
     target_sen: number;
     target_date: string | null;
-    current_sen: number;
+    base_sen: number;
   }>
 ): Promise<void> {
   const supabase = createClient();

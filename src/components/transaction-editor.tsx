@@ -9,6 +9,7 @@ import {
 import { rememberMerchant } from "@/lib/api/merchant-memory";
 import AmountInput from "@/components/amount-input";
 import { useI18n } from "@/lib/i18n-client";
+import type { Goal } from "@/lib/goals";
 import type { Category, Transaction, TxType } from "@/lib/api/types";
 import type { ReliefRow } from "@/lib/relief";
 
@@ -17,6 +18,7 @@ export default function TransactionEditor({
   txn,
   categories,
   reliefs,
+  goals,
   onClose,
   onChanged,
   onDeleted,
@@ -24,6 +26,7 @@ export default function TransactionEditor({
   txn: Transaction;
   categories: Category[];
   reliefs: ReliefRow[];
+  goals: Goal[];
   onClose: () => void;
   onChanged: () => void;
   onDeleted: (id: string) => void;
@@ -33,6 +36,7 @@ export default function TransactionEditor({
   const [merchant, setMerchant] = useState(txn.merchant);
   const [categoryId, setCategoryId] = useState<string>(txn.category_id ?? "");
   const [reliefCode, setReliefCode] = useState<string>(txn.tax_relief_code ?? "");
+  const [goalId, setGoalId] = useState<string>(txn.goal_id ?? "");
   const [date, setDate] = useState(txn.occurred_at);
   const [note, setNote] = useState(txn.note ?? "");
   const [busy, setBusy] = useState(false);
@@ -56,6 +60,7 @@ export default function TransactionEditor({
         merchant,
         category_id: categoryId || null,
         tax_relief_code: relief,
+        goal_id: type === "income" ? goalId || null : null,
         occurred_at: date,
         note: note.trim() || null,
       });
@@ -141,6 +146,26 @@ export default function TransactionEditor({
             </option>
           ))}
         </select>
+
+        {type === "income" && goals.length > 0 && (
+          <>
+            <label className="mt-3 block text-xs text-gray-500">
+              {t("goals.tagToGoal")}
+            </label>
+            <select
+              value={goalId}
+              onChange={(e) => setGoalId(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-base outline-none focus:border-indigo-600"
+            >
+              <option value="">{t("goals.noGoal")}</option>
+              {goals.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.emoji} {g.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
 
         {type === "expense" && reliefs.length > 0 && (
           <>

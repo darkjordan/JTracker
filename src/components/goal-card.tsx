@@ -18,28 +18,22 @@ export default function GoalCard({
 }) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [currentEdit, setCurrentEdit] = useState(formatSen(goal.current_sen));
 
   const [eName, setEName] = useState(goal.name);
   const [eEmoji, setEEmoji] = useState(goal.emoji);
   const [eTarget, setETarget] = useState(formatSen(goal.target_sen));
   const [eDate, setEDate] = useState(goal.target_date ?? "");
+  const [eBase, setEBase] = useState(formatSen(goal.base_sen));
   const { t } = useI18n();
 
   const pr = goalProgress(goal);
-
-  async function saveCurrent() {
-    const sen = parseAmountToSen(currentEdit) ?? 0;
-    if (sen === goal.current_sen) return;
-    await updateGoal(goal.id, { current_sen: sen });
-    onChanged();
-  }
 
   function startEdit() {
     setEName(goal.name);
     setEEmoji(goal.emoji);
     setETarget(formatSen(goal.target_sen));
     setEDate(goal.target_date ?? "");
+    setEBase(formatSen(goal.base_sen));
     setEditing(true);
   }
 
@@ -51,6 +45,7 @@ export default function GoalCard({
         emoji: eEmoji.trim() || goal.emoji,
         target_sen: parseAmountToSen(eTarget) ?? goal.target_sen,
         target_date: eDate || null,
+        base_sen: parseAmountToSen(eBase) ?? goal.base_sen,
       });
       setEditing(false);
       onChanged();
@@ -115,23 +110,12 @@ export default function GoalCard({
         />
       </div>
 
-      <div className="mt-2 flex items-center gap-2">
-        <div className="flex flex-1 items-center rounded-lg border border-gray-300 px-2">
-          <span className="mr-1 text-xs text-gray-400">RM</span>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={currentEdit}
-            onChange={(e) => setCurrentEdit(e.target.value)}
-            onBlur={saveCurrent}
-            aria-label={t("goals.currentSaved")}
-            className="w-full bg-transparent py-1 text-sm tabular-nums outline-none"
-          />
-        </div>
+      <div className="mt-2 flex items-center justify-between">
+        <p className="text-xs text-gray-400">{t("goals.taggedHint")}</p>
         <button
           type="button"
           onClick={editing ? () => setEditing(false) : startEdit}
-          className="text-xs font-medium text-indigo-600"
+          className="shrink-0 text-xs font-medium text-indigo-600"
         >
           {editing ? t("close") : t("edit")}
         </button>
@@ -173,6 +157,19 @@ export default function GoalCard({
               />
             </label>
           </div>
+          <label className="block text-xs text-gray-400">
+            {t("goals.manualTopUp")}
+            <div className="mt-0.5 flex items-center rounded-lg border border-gray-300 px-2">
+              <span className="mr-1 text-xs text-gray-400">RM</span>
+              <input
+                value={eBase}
+                inputMode="decimal"
+                onChange={(e) => setEBase(e.target.value)}
+                aria-label={t("goals.manualTopUp")}
+                className="w-full bg-transparent py-1.5 text-sm outline-none"
+              />
+            </div>
+          </label>
           <button
             type="button"
             onClick={saveEdit}

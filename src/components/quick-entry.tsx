@@ -7,20 +7,24 @@ import { findOrCreateCategory } from "@/lib/api/categories";
 import { enqueue } from "@/lib/offline-queue";
 import AmountInput from "@/components/amount-input";
 import { useI18n } from "@/lib/i18n-client";
+import type { Goal } from "@/lib/goals";
 import type { Category, Transaction, TxType } from "@/lib/api/types";
 
 const OTHER = "__other__";
 
 // Structured quick-add: Expense/Income toggle, numeric amount, description,
 // category (or "Other…" free text), and a date that defaults to today but can
-// be back-dated.
+// be back-dated. Income can optionally be tagged to a Goal, so its progress
+// updates automatically instead of being hand-typed (see goals_with_progress).
 export default function QuickEntry({
   categories,
+  goals,
   onAdded,
   onCategoryCreated,
   onQueuedOffline,
 }: {
   categories: Category[];
+  goals: Goal[];
   onAdded: (t: Transaction) => void;
   onCategoryCreated?: () => void;
   onQueuedOffline?: () => void;
@@ -31,6 +35,7 @@ export default function QuickEntry({
   const [categoryId, setCategoryId] = useState("");
   const [customCat, setCustomCat] = useState("");
   const [date, setDate] = useState(todayLocal());
+  const [goalId, setGoalId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { t } = useI18n();
@@ -46,6 +51,7 @@ export default function QuickEntry({
     setType(t);
     setCategoryId("");
     setCustomCat("");
+    setGoalId("");
   }
 
   function onAmountChange(v: number) {
@@ -95,6 +101,7 @@ export default function QuickEntry({
         merchant: merchant.trim() || (isIncome ? "Income" : "Expense"),
         merchant_norm: normalizeMerchant(merchant),
         category_id,
+        goal_id: isIncome && goalId ? goalId : null,
         occurred_at: date,
         source: "manual" as const,
       };
@@ -127,6 +134,7 @@ export default function QuickEntry({
       setCategoryId("");
       setCustomCat("");
       setDate(todayLocal());
+      setGoalId("");
       onAdded(txn);
       if (created) onCategoryCreated?.();
     } catch {
@@ -225,6 +233,22 @@ export default function QuickEntry({
           className={`mt-2 w-full ${field}`}
           autoFocus
         />
+      )}
+
+      {isIncome && goals.length > 0 && (
+        <select
+          value={goalId}
+          onChange={(e) => setGoalId(e.target.value)}
+          aria-label={t("goals.tagToGoal")}
+          className={`mt-2 w-full bg-white ${field}`}
+        >
+          <option value="">{t("goals.noGoal")}</option>
+          {goals.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.emoji} {g.name}
+            </option>
+          ))}
+        </select>
       )}
 
       {error && <p className="mt-2 px-1 text-xs text-red-600">{error}</p>}

@@ -23,6 +23,8 @@ import { PrivacyToggle } from "@/components/money-privacy";
 import LanguageSwitcher from "@/app/language-switcher";
 import { listCategories } from "@/lib/api/categories";
 import { listReliefs } from "@/lib/api/tax-relief";
+import { listGoals } from "@/lib/api/goals";
+import type { Goal } from "@/lib/goals";
 import { getHousehold } from "@/lib/api/household";
 import { getAdEligibility } from "@/lib/api/promo";
 import { downloadSharedCapture } from "@/lib/api/shared-captures";
@@ -67,6 +69,7 @@ export default function Dashboard() {
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [trend, setTrend] = useState<MonthPoint[]>([]);
   const [reliefs, setReliefs] = useState<ReliefRow[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [memberMap, setMemberMap] = useState<Map<string, MemberBadge>>(new Map());
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -159,12 +162,14 @@ export default function Dashboard() {
         rel,
         hh,
         adEligible,
+        gls,
       ] = await Promise.all([
         listCategories(),
         supabase.auth.getUser(),
         listReliefs(y),
         getHousehold(),
         getAdEligibility(),
+        listGoals(),
       ]);
       setShowAd(adEligible);
       setIsAnon(!!user?.is_anonymous);
@@ -184,6 +189,7 @@ export default function Dashboard() {
       setTxns(list);
       setTrend(bucketMonthly(range, months));
       setReliefs(rel);
+      setGoals(gls);
     } catch {
       setError(t("dash.loadError"));
     } finally {
@@ -287,6 +293,7 @@ export default function Dashboard() {
           <>
             <QuickEntry
               categories={categories}
+              goals={goals}
               onAdded={(txn) => {
                 if (txn.id.startsWith("offline-")) {
                   // Queued, not saved — reloading from the network would
@@ -455,6 +462,7 @@ export default function Dashboard() {
             txn={editing}
             categories={categories}
             reliefs={reliefs}
+            goals={goals}
             onClose={() => setEditing(null)}
             onChanged={() => load(sel.y, sel.m, scope)}
             onDeleted={(id) => setTxns((prev) => prev.filter((t) => t.id !== id))}

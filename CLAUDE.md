@@ -389,3 +389,24 @@ CSV export, Supabase client/server + anon-session proxy.
   an installed PWA), and Background Sync's real wake-up behavior. Per rule
   #1, this is committed locally but **not pushed** — needs the user's
   real-device confirmation first.
+- **Goal tagging + computed progress DONE + LIVE (2026-08-09):** user
+  feedback — hand-typing a goal's "current saved" total was confusing and
+  drifted from reality the moment anyone edited/deleted a contributing
+  entry. `transactions.goal_id` (nullable FK, `on delete set null`) lets an
+  income entry be tagged to a Goal from Quick Entry or the transaction
+  editor. `goals.current_sen` is no longer stored — the old column was
+  renamed to `base_sen` (a manual starting amount, e.g. pre-app savings) and
+  a new `goals_with_progress` VIEW computes `current_sen = base_sen + sum of
+  tagged income transactions` live, so editing or deleting a tagged entry
+  updates progress automatically with no sync code anywhere. `listGoals()`
+  now reads from the view; writes still go to the `goals` table.
+  GoalCard's editable amount moved into the Edit panel as "Manual top-up",
+  no longer a prominent always-visible field.
+  **Security bug found and fixed during verification**: a bare `create
+  view` runs with the view owner's privileges (postgres, a superuser that
+  bypasses RLS) rather than the querying user's — confirmed live that this
+  leaked every household's goal progress to an unrelated anonymous session.
+  Fixed with `security_invoker = true` on the view (verified: outsider
+  access → 0 rows). Full lifecycle verified live via real JWT simulation:
+  tag → progress reflects it, edit amount → progress updates, delete → progress
+  reverts to just the base, cross-household isolation holds throughout.

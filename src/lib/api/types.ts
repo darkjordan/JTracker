@@ -21,6 +21,7 @@ export type Transaction = {
   merchant_norm: string;
   category_id: string | null;
   tax_relief_code: string | null;
+  goal_id: string | null;
   occurred_at: string; // YYYY-MM-DD
   note: string | null;
   source: TxSource;
@@ -35,6 +36,7 @@ export type NewTransaction = {
   merchant_norm?: string;
   category_id?: string | null;
   tax_relief_code?: string | null;
+  goal_id?: string | null;
   occurred_at?: string;
   note?: string | null;
   source?: TxSource;

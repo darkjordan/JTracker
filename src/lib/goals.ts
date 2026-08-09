@@ -6,7 +6,12 @@ export type Goal = {
   emoji: string;
   target_sen: number;
   target_date: string | null; // YYYY-MM-DD
+  // Computed: base_sen + sum of income transactions tagged to this goal
+  // (see the goals_with_progress view) — never hand-edited directly.
   current_sen: number;
+  // The one editable piece: a manual starting amount (e.g. savings from
+  // before using JTracker), on top of which tagged transactions accumulate.
+  base_sen: number;
   sort_order: number;
 };
 

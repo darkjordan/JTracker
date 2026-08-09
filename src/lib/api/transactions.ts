@@ -3,7 +3,7 @@ import { normalizeMerchant } from "@/lib/money";
 import type { Transaction, NewTransaction } from "./types";
 
 const COLS =
-  "id,user_id,type,amount_sen,currency,merchant,merchant_norm,category_id,tax_relief_code,occurred_at,note,source,reviewed,created_at";
+  "id,user_id,type,amount_sen,currency,merchant,merchant_norm,category_id,tax_relief_code,goal_id,occurred_at,note,source,reviewed,created_at";
 
 /** Local (not UTC) YYYY-MM-DD, so a late-night entry lands on the right day. */
 export function todayLocal(): string {
@@ -85,6 +85,7 @@ export async function createTransaction(input: NewTransaction): Promise<Transact
     merchant_norm: input.merchant_norm ?? normalizeMerchant(input.merchant),
     category_id: input.category_id ?? null,
     tax_relief_code: input.tax_relief_code ?? null,
+    goal_id: input.goal_id ?? null,
     occurred_at: input.occurred_at ?? todayLocal(),
     note: input.note ?? null,
     source: input.source ?? "manual",
