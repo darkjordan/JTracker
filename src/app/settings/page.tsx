@@ -14,6 +14,8 @@ import {
   isAdmin,
   type RedeemResult,
 } from "@/lib/api/promo";
+import { useI18n } from "@/lib/i18n-client";
+import LanguageSwitcher from "@/app/language-switcher";
 
 type Account = { email: string | null; anonymous: boolean } | null;
 
@@ -48,6 +50,7 @@ export default function SettingsPage() {
   const [promoCode, setPromoCode] = useState("");
   const [redeeming, setRedeeming] = useState(false);
   const [redeemMsg, setRedeemMsg] = useState<string | null>(null);
+  const { t, lang } = useI18n();
 
   const loadAccount = useCallback(async () => {
     const supabase = createClient();
@@ -92,10 +95,10 @@ export default function SettingsPage() {
     try {
       const result: RedeemResult = await redeemPromoCode(promoCode.trim());
       const messages: Record<RedeemResult, string> = {
-        ok: "Ads removed!",
-        already: "You've already unlocked ad-free.",
-        invalid: "That code isn't valid.",
-        exhausted: "That code has been fully used.",
+        ok: t("settings.redeemOk"),
+        already: t("settings.redeemAlready"),
+        invalid: t("settings.redeemInvalid"),
+        exhausted: t("settings.redeemExhausted"),
       };
       setRedeemMsg(messages[result]);
       if (result === "ok" || result === "already") {
@@ -103,14 +106,14 @@ export default function SettingsPage() {
         setPromoCode("");
       }
     } catch {
-      setRedeemMsg("Couldn't redeem that code. Try again.");
+      setRedeemMsg(t("settings.redeemFailed"));
     } finally {
       setRedeeming(false);
     }
   }
 
   async function undoImport(imp: ImportRow) {
-    if (!confirm(`Remove this import and its ${imp.txn_count} transactions?`)) return;
+    if (!confirm(t("settings.removeImportConfirm", { n: imp.txn_count }))) return;
     setRollingBack(imp.id);
     try {
       await rollbackImport(imp.id, imp.file_path);
@@ -129,13 +132,13 @@ export default function SettingsPage() {
         listCategories(),
       ]);
       if (txns.length === 0) {
-        setMsg("Nothing to export yet.");
+        setMsg(t("settings.nothingToExport"));
         return;
       }
       downloadCsv(`jtracker-${todayLocal()}.csv`, transactionsToCsv(txns, cats));
-      setMsg(`Exported ${txns.length} transactions.`);
+      setMsg(t("settings.exportedCount", { n: txns.length }));
     } catch {
-      setMsg("Export failed. Try again.");
+      setMsg(t("settings.exportFailed"));
     } finally {
       setBusy(false);
     }
@@ -153,21 +156,24 @@ export default function SettingsPage() {
     <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight text-gray-900">
-          Settings
+          {t("settings.title")}
         </h1>
-        <Link href="/" className="text-sm font-medium text-indigo-600">
-          Done
-        </Link>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <Link href="/" className="text-sm font-medium text-indigo-600">
+            {t("done")}
+          </Link>
+        </div>
       </header>
 
       {/* Account */}
       <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-        <h2 className="text-sm font-semibold text-gray-900">Account</h2>
+        <h2 className="text-sm font-semibold text-gray-900">{t("settings.account")}</h2>
         {signedIn ? (
           <>
-            <p className="mt-1 text-xs text-gray-500">Signed in as</p>
+            <p className="mt-1 text-xs text-gray-500">{t("settings.signedInAs")}</p>
             <p className="truncate text-sm font-medium text-gray-900">
-              {account?.email ?? "Google account"}
+              {account?.email ?? t("settings.googleAccount")}
             </p>
             <button
               type="button"
@@ -175,20 +181,17 @@ export default function SettingsPage() {
               disabled={signingOut}
               className="mt-3 w-full rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-700 disabled:opacity-50"
             >
-              {signingOut ? "Signing out…" : "Sign out"}
+              {signingOut ? t("settings.signOutInProgress") : t("settings.signOut")}
             </button>
           </>
         ) : (
           <>
-            <p className="mt-1 text-xs text-gray-500">
-              You’re using JTracker anonymously — your data lives only in this
-              browser. Sign in to keep it and sync across devices.
-            </p>
+            <p className="mt-1 text-xs text-gray-500">{t("settings.anonHint")}</p>
             <Link
               href="/login"
               className="mt-3 block w-full rounded-xl bg-indigo-600 py-2.5 text-center text-sm font-semibold text-white"
             >
-              Sign in with Google
+              {t("settings.signInGoogle")}
             </Link>
           </>
         )}
@@ -196,22 +199,20 @@ export default function SettingsPage() {
 
       {/* Ads */}
       <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-        <h2 className="text-sm font-semibold text-gray-900">Ads</h2>
+        <h2 className="text-sm font-semibold text-gray-900">{t("settings.ads")}</h2>
         {adFree ? (
           <p className="mt-2 text-sm font-medium text-emerald-600">
-            ✓ Ads removed
+            {t("settings.adsRemoved")}
           </p>
         ) : signedIn ? (
           <>
-            <p className="mt-1 text-xs text-gray-500">
-              Have a promo code? Redeem it to remove ads permanently.
-            </p>
+            <p className="mt-1 text-xs text-gray-500">{t("settings.promoHint")}</p>
             <div className="mt-3 flex gap-2">
               <input
                 type="text"
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value)}
-                placeholder="Promo code"
+                placeholder={t("settings.promoCode")}
                 className="min-w-0 flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm"
               />
               <button
@@ -220,7 +221,7 @@ export default function SettingsPage() {
                 disabled={redeeming || !promoCode.trim()}
                 className="shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {redeeming ? "…" : "Redeem"}
+                {redeeming ? "…" : t("settings.redeem")}
               </button>
             </div>
             {redeemMsg && (
@@ -228,16 +229,14 @@ export default function SettingsPage() {
             )}
           </>
         ) : (
-          <p className="mt-1 text-xs text-gray-500">
-            Sign in to redeem a promo code.
-          </p>
+          <p className="mt-1 text-xs text-gray-500">{t("settings.signInToRedeem")}</p>
         )}
       </section>
 
       {admin && (
         <p className="mt-3 px-1 text-right text-xs">
           <Link href="/admin" className="font-medium text-indigo-600">
-            Back office →
+            {t("settings.backOffice")}
           </Link>
         </p>
       )}
@@ -246,11 +245,9 @@ export default function SettingsPage() {
       {imports.length > 0 && (
         <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
           <h2 className="text-sm font-semibold text-gray-900">
-            Imported statements
+            {t("settings.importedStatements")}
           </h2>
-          <p className="mt-1 text-xs text-gray-500">
-            Undo an import to remove all of its transactions.
-          </p>
+          <p className="mt-1 text-xs text-gray-500">{t("settings.undoImportHint")}</p>
           <ul className="mt-2 divide-y divide-gray-100">
             {imports.map((imp) => (
               <li key={imp.id} className="flex items-center gap-3 py-2">
@@ -258,10 +255,14 @@ export default function SettingsPage() {
                   <p className="truncate text-sm text-gray-900">
                     {imp.statement_start && imp.statement_end
                       ? `${imp.statement_start} → ${imp.statement_end}`
-                      : new Date(imp.created_at).toLocaleDateString("en-MY")}
+                      : new Date(imp.created_at).toLocaleDateString(
+                          lang === "zh" ? "zh-CN" : lang === "ms" ? "ms-MY" : "en-MY"
+                        )}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {imp.txn_count} transaction{imp.txn_count === 1 ? "" : "s"}
+                    {imp.txn_count === 1
+                      ? t("settings.transactionOne")
+                      : t("settings.transactionMany", { n: imp.txn_count })}
                   </p>
                 </div>
                 <button
@@ -270,7 +271,7 @@ export default function SettingsPage() {
                   disabled={rollingBack === imp.id}
                   className="shrink-0 text-xs font-semibold text-red-600 disabled:opacity-50"
                 >
-                  {rollingBack === imp.id ? "Removing…" : "Undo"}
+                  {rollingBack === imp.id ? t("settings.removing") : t("settings.undo")}
                 </button>
               </li>
             ))}
@@ -280,28 +281,23 @@ export default function SettingsPage() {
 
       {/* Export */}
       <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-        <h2 className="text-sm font-semibold text-gray-900">Export data</h2>
-        <p className="mt-1 text-xs text-gray-500">
-          Download all your transactions as a CSV file — your data, anytime.
-        </p>
+        <h2 className="text-sm font-semibold text-gray-900">{t("settings.exportData")}</h2>
+        <p className="mt-1 text-xs text-gray-500">{t("settings.exportHint")}</p>
         <button
           type="button"
           onClick={exportCsv}
           disabled={busy}
           className="mt-3 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {busy ? "Preparing…" : "Export CSV"}
+          {busy ? t("settings.exportPreparing") : t("settings.exportCsv")}
         </button>
         {msg && <p className="mt-2 text-xs text-gray-600">{msg}</p>}
       </section>
 
       {/* Build stamp — confirms which deployment this browser is actually running. */}
       <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-        <h2 className="text-sm font-semibold text-gray-900">Version</h2>
-        <p className="mt-1 text-xs text-gray-500">
-          Compare this against the commit you deployed. If it hasn’t changed
-          after a deploy, this browser is still on the old build.
-        </p>
+        <h2 className="text-sm font-semibold text-gray-900">{t("settings.version")}</h2>
+        <p className="mt-1 text-xs text-gray-500">{t("settings.versionHint")}</p>
         <p className="mt-2 font-mono text-sm tabular-nums text-gray-900">
           {buildLabel()}
         </p>
@@ -310,12 +306,12 @@ export default function SettingsPage() {
           onClick={hardReload}
           className="mt-3 w-full rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-700"
         >
-          Force refresh
+          {t("settings.forceRefresh")}
         </button>
       </section>
 
       <p className="mt-6 px-1 text-center text-xs text-gray-400">
-        JTracker · MYR · your data, your device
+        {t("settings.footer")}
       </p>
     </main>
   );
