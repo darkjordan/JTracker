@@ -11,6 +11,7 @@ import {
   type Cadence,
 } from "@/lib/recurring";
 import { updatePlan, deletePlan } from "@/lib/api/recurring";
+import { useI18n } from "@/lib/i18n-client";
 
 const CADENCES: Cadence[] = ["weekly", "monthly", "yearly"];
 const field =
@@ -32,6 +33,7 @@ export default function PlanCard({
   const [eDue, setEDue] = useState(plan.next_due ?? "");
   const [eTimes, setETimes] = useState(plan.occurrences ? String(plan.occurrences) : "");
   const [ePaid, setEPaid] = useState(String(plan.paid_count ?? 0));
+  const { t } = useI18n();
 
   const pr = planProgress(plan);
   const finite = !!plan.occurrences;
@@ -85,7 +87,7 @@ export default function PlanCard({
   }
 
   async function remove() {
-    if (!confirm(`Delete plan "${plan.name}"?`)) return;
+    if (!confirm(t("plan.deleteConfirm", { name: plan.name }))) return;
     setBusy(true);
     try {
       await deletePlan(plan.id);
@@ -101,10 +103,10 @@ export default function PlanCard({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-gray-900">{plan.name}</p>
           <p className="text-xs text-gray-400">
-            {plan.cadence}
-            {plan.next_due && !done && ` · next ${plan.next_due}`} ·{" "}
-            {formatSen(monthlyEquivalentSen(plan.amount_sen, plan.cadence))}/mo
-            {!finite && " · ongoing"}
+            {t(`cadence.${plan.cadence}`)}
+            {plan.next_due && !done && t("plan.next", { due: plan.next_due })} ·{" "}
+            {formatSen(monthlyEquivalentSen(plan.amount_sen, plan.cadence))}{t("plan.perMonth")}
+            {!finite && t("plan.ongoing")}
           </p>
         </div>
         <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900">
@@ -115,7 +117,7 @@ export default function PlanCard({
           onClick={remove}
           disabled={busy}
           className="shrink-0 text-gray-300 hover:text-red-500 disabled:opacity-50"
-          aria-label="Delete plan"
+          aria-label={t("plan.deletePlan")}
         >
           ✕
         </button>
@@ -125,10 +127,10 @@ export default function PlanCard({
         <>
           <div className="mt-2 flex items-center justify-between text-xs">
             <span className="text-gray-500">
-              Paid {pr.paid} / {pr.total}
+              {t("plan.paidOf", { paid: pr.paid, total: pr.total ?? 0 })}
               {pr.endDate && (
                 <>
-                  {" "}· {done ? "completed" : "completes"}{" "}
+                  {done ? t("plan.completed") : t("plan.completes")}{" "}
                   <span className="font-medium text-gray-700">{pr.endDate}</span>
                 </>
               )}
@@ -148,7 +150,7 @@ export default function PlanCard({
 
       <div className="mt-2 flex items-center gap-3">
         {done ? (
-          <span className="text-xs font-medium text-emerald-600">✓ Completed</span>
+          <span className="text-xs font-medium text-emerald-600">{t("plan.completedBadge")}</span>
         ) : canPay ? (
           <button
             type="button"
@@ -156,11 +158,11 @@ export default function PlanCard({
             disabled={busy}
             className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
           >
-            Mark paid
+            {t("plan.markPaid")}
           </button>
         ) : plan.next_due ? (
           <span className="text-xs text-gray-400">
-            Next payment due {plan.next_due}
+            {t("plan.nextPaymentDue", { date: plan.next_due })}
           </span>
         ) : null}
         <button
@@ -168,38 +170,38 @@ export default function PlanCard({
           onClick={editing ? () => setEditing(false) : startEdit}
           className="text-xs font-medium text-indigo-600"
         >
-          {editing ? "Close" : "Edit"}
+          {editing ? t("close") : t("edit")}
         </button>
       </div>
 
       {editing && (
         <div className="mt-2 space-y-2 rounded-xl bg-gray-50 p-2">
-          <input value={eName} onChange={(e) => setEName(e.target.value)} placeholder="Name" className={`w-full ${field}`} />
+          <input value={eName} onChange={(e) => setEName(e.target.value)} placeholder={t("plan.namePlaceholder")} className={`w-full ${field}`} />
           <div className="flex gap-2">
             <div className="flex flex-1 items-center rounded-lg border border-gray-300 px-2">
               <span className="mr-1 text-xs text-gray-400">RM</span>
               <input value={eAmount} inputMode="decimal" onChange={(e) => setEAmount(e.target.value)} className="w-full bg-transparent py-1.5 text-sm outline-none" />
             </div>
             <select value={eCadence} onChange={(e) => setECadence(e.target.value as Cadence)} className={`bg-white ${field}`}>
-              {CADENCES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {CADENCES.map((c) => <option key={c} value={c}>{t(`cadence.${c}`)}</option>)}
             </select>
           </div>
           <div className="flex gap-2">
             <label className="flex-1 text-xs text-gray-400">
-              Next due
+              {t("recurring.nextDue")}
               <input type="date" value={eDue} onChange={(e) => setEDue(e.target.value)} className={`mt-0.5 w-full ${field}`} />
             </label>
             <label className="w-16 text-xs text-gray-400">
-              × times
+              {t("recurring.timesPlaceholder")}
               <input value={eTimes} inputMode="numeric" onChange={(e) => setETimes(e.target.value.replace(/[^0-9]/g, ""))} className={`mt-0.5 w-full ${field}`} />
             </label>
             <label className="w-16 text-xs text-gray-400">
-              Paid
+              {t("plan.paidLabel")}
               <input value={ePaid} inputMode="numeric" onChange={(e) => setEPaid(e.target.value.replace(/[^0-9]/g, ""))} className={`mt-0.5 w-full ${field}`} />
             </label>
           </div>
           <button type="button" onClick={saveEdit} disabled={busy} className="w-full rounded-lg bg-indigo-600 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
-            Save changes
+            {t("goals.saveChanges")}
           </button>
         </div>
       )}
