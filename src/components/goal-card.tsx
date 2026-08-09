@@ -4,6 +4,7 @@ import { useState } from "react";
 import { formatRM, formatSen, parseAmountToSen } from "@/lib/money";
 import { goalProgress, type Goal } from "@/lib/goals";
 import { updateGoal, deleteGoal } from "@/lib/api/goals";
+import { useI18n } from "@/lib/i18n-client";
 
 const field =
   "rounded-lg border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-indigo-600";
@@ -23,6 +24,7 @@ export default function GoalCard({
   const [eEmoji, setEEmoji] = useState(goal.emoji);
   const [eTarget, setETarget] = useState(formatSen(goal.target_sen));
   const [eDate, setEDate] = useState(goal.target_date ?? "");
+  const { t } = useI18n();
 
   const pr = goalProgress(goal);
 
@@ -58,7 +60,7 @@ export default function GoalCard({
   }
 
   async function remove() {
-    if (!confirm(`Delete goal "${goal.name}"?`)) return;
+    if (!confirm(t("goals.deleteConfirm", { name: goal.name }))) return;
     setBusy(true);
     try {
       await deleteGoal(goal.id);
@@ -76,15 +78,15 @@ export default function GoalCard({
           <p className="truncate text-sm font-medium text-gray-900">{goal.name}</p>
           <p className="text-xs text-gray-400">
             {pr.done
-              ? "Goal reached 🎉"
-              : `${formatRM(pr.remainingSen)} left`}
+              ? t("goals.reached")
+              : `${formatRM(pr.remainingSen)} ${t("goals.left")}`}
             {pr.daysLeft !== null && !pr.done && (
               <>
                 {" "}
                 ·{" "}
                 {pr.daysLeft >= 0
-                  ? `${pr.daysLeft}d left`
-                  : `${-pr.daysLeft}d overdue`}
+                  ? t("goals.daysLeft", { n: pr.daysLeft })
+                  : t("goals.daysOverdue", { n: -pr.daysLeft })}
               </>
             )}
           </p>
@@ -94,7 +96,7 @@ export default function GoalCard({
           onClick={remove}
           disabled={busy}
           className="shrink-0 text-gray-300 hover:text-red-500 disabled:opacity-50"
-          aria-label="Delete goal"
+          aria-label={t("goals.deleteGoal")}
         >
           ✕
         </button>
@@ -122,7 +124,7 @@ export default function GoalCard({
             value={currentEdit}
             onChange={(e) => setCurrentEdit(e.target.value)}
             onBlur={saveCurrent}
-            aria-label="Current saved amount"
+            aria-label={t("goals.currentSaved")}
             className="w-full bg-transparent py-1 text-sm tabular-nums outline-none"
           />
         </div>
@@ -131,7 +133,7 @@ export default function GoalCard({
           onClick={editing ? () => setEditing(false) : startEdit}
           className="text-xs font-medium text-indigo-600"
         >
-          {editing ? "Close" : "Edit"}
+          {editing ? t("close") : t("edit")}
         </button>
       </div>
 
@@ -147,7 +149,7 @@ export default function GoalCard({
             <input
               value={eName}
               onChange={(e) => setEName(e.target.value)}
-              placeholder="Name"
+              placeholder={t("goals.namePlaceholder")}
               className={`flex-1 ${field}`}
             />
           </div>
@@ -162,7 +164,7 @@ export default function GoalCard({
               />
             </div>
             <label className="flex-1 text-xs text-gray-400">
-              Target date
+              {t("goals.targetDateEdit")}
               <input
                 type="date"
                 value={eDate}
@@ -177,7 +179,7 @@ export default function GoalCard({
             disabled={busy}
             className="w-full rounded-lg bg-indigo-600 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
           >
-            Save changes
+            {t("goals.saveChanges")}
           </button>
         </div>
       )}
