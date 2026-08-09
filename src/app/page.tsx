@@ -322,6 +322,7 @@ export default function Dashboard() {
                     { href: "/accounts", label: "💰 Accounts" },
                     { href: "/recurring", label: "🔁 Recurring" },
                     { href: "/relief", label: "🎯 Relief" },
+                    { href: "/goals", label: "🏁 Goals" },
                     { href: "/household", label: "👨‍👩‍👧 Household" },
                   ].map((l) => (
                     <Link
