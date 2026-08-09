@@ -324,6 +324,19 @@ const en: Dict = {
   "plan.paidLabel": "Paid",
   "plan.deletePlan": "Delete plan",
   "plan.deleteConfirm": "Delete plan \"{name}\"?",
+
+  // tax relief
+  "relief.title": "Tax relief",
+  "relief.prevYear": "Previous year",
+  "relief.nextYear": "Next year",
+  "relief.claimedSoFar": "claimed so far",
+  "relief.exportReport": "Export report (CSV)",
+  "relief.noCategories": "No relief categories for {year}.",
+  "relief.capLabel": "Cap RM",
+  "relief.capNone": "none",
+  "relief.editHint": "edit for YA {year}; blank = LHDN default",
+  "relief.footer":
+    "Caps are defaults to verify against LHDN for the assessment year — edit any that differ. Not tax advice.",
 };
 
 const zh: Dict = {
@@ -606,6 +619,17 @@ const zh: Dict = {
   "plan.paidLabel": "已付",
   "plan.deletePlan": "删除计划",
   "plan.deleteConfirm": "删除计划「{name}」？",
+
+  "relief.title": "税务减免",
+  "relief.prevYear": "上一年",
+  "relief.nextYear": "下一年",
+  "relief.claimedSoFar": "已申报",
+  "relief.exportReport": "导出报告（CSV）",
+  "relief.noCategories": "{year} 年暂无减免类别。",
+  "relief.capLabel": "上限 RM",
+  "relief.capNone": "无",
+  "relief.editHint": "为 {year} 课税年编辑；留空 = LHDN 默认值",
+  "relief.footer": "上限为默认值，请与 LHDN 核实该课税年的实际上限 — 如有不同请自行编辑。此非税务建议。",
 };
 
 const ms: Dict = {
@@ -896,6 +920,18 @@ const ms: Dict = {
   "plan.paidLabel": "Dibayar",
   "plan.deletePlan": "Padam rancangan",
   "plan.deleteConfirm": "Padam rancangan \"{name}\"?",
+
+  "relief.title": "Pelepasan cukai",
+  "relief.prevYear": "Tahun sebelum",
+  "relief.nextYear": "Tahun seterusnya",
+  "relief.claimedSoFar": "dituntut setakat ini",
+  "relief.exportReport": "Eksport laporan (CSV)",
+  "relief.noCategories": "Tiada kategori pelepasan untuk {year}.",
+  "relief.capLabel": "Had RM",
+  "relief.capNone": "tiada",
+  "relief.editHint": "edit untuk TT {year}; kosong = lalai LHDN",
+  "relief.footer":
+    "Had adalah lalai untuk disahkan dengan LHDN bagi tahun taksiran — edit mana-mana yang berbeza. Bukan nasihat cukai.",
 };
 
 const messages: Record<Lang, Dict> = { en, zh, ms };
