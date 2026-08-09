@@ -364,8 +364,11 @@ CSV export, Supabase client/server + anon-session proxy.
   motivated by `purge_stale_anon` actually deleting inactive anonymous data —
   a real data-loss risk, not just a growth prompt. One-time dismiss via
   localStorage, not a recurring nag.
-- **Phase 9 offline queue + share_target BUILT, tested headlessly, NOT
-  pushed (2026-08-09):** `share_target` added to the manifest;
+- **Phase 9 offline queue + share_target BUILT + LIVE (2026-08-09):**
+  pushed earlier than intended (a `git push` swept it up together with an
+  unrelated later commit) — the user opted to leave it live rather than
+  revert, since it was already tested as thoroughly as possible short of a
+  real device. `share_target` added to the manifest;
   `/share-target` route stages a shared image in the new private
   `shared-captures` Storage bucket (same per-user-folder RLS pattern as
   `statements`) and redirects to `/?shared=<path>`; the Dashboard downloads
@@ -386,9 +389,9 @@ CSV export, Supabase client/server + anon-session proxy.
   `/share-target`'s POST→upload→redirect→download round-trip against the
   live storage bucket. **What's NOT verified and can't be without a real
   device**: the actual OS share sheet offering "JTracker" as a target (needs
-  an installed PWA), and Background Sync's real wake-up behavior. Per rule
-  #1, this is committed locally but **not pushed** — needs the user's
-  real-device confirmation first.
+  an installed PWA), and Background Sync's real wake-up behavior. **Still
+  needs real-device confirmation** — it's live, but unverified on-device
+  until the user actually tries sharing a receipt and toggling airplane mode.
 - **Goal tagging + computed progress DONE + LIVE (2026-08-09):** user
   feedback — hand-typing a goal's "current saved" total was confusing and
   drifted from reality the moment anyone edited/deleted a contributing
