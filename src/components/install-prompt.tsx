@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from "@/lib/i18n-client";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -14,6 +15,7 @@ export default function InstallPrompt() {
   const [installed, setInstalled] = useState(true); // hidden until known
   const [platform, setPlatform] = useState<"android" | "ios" | "other">("other");
   const [showHelp, setShowHelp] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     // Read install state / platform from the browser (external system) on mount.
@@ -62,13 +64,11 @@ export default function InstallPrompt() {
         onClick={handleClick}
         className="flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 py-2.5 text-sm font-semibold text-indigo-700 active:scale-[0.99]"
       >
-        ⤓ Install JTracker app
+        {t("install.installApp")}
       </button>
       {showHelp && (
         <p className="mt-2 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">
-          {platform === "ios"
-            ? "In Safari: tap the Share button, then “Add to Home Screen”."
-            : "In your browser menu, choose “Install app” or “Add to Home Screen”."}
+          {platform === "ios" ? t("install.iosHelp") : t("install.otherHelp")}
         </p>
       )}
     </div>

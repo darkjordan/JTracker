@@ -1,6 +1,7 @@
 "use client";
 
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
+import { useI18n } from "@/lib/i18n-client";
 
 // Tiny daily-spending trace for the current month.
 export default function Sparkline({
@@ -8,13 +9,14 @@ export default function Sparkline({
 }: {
   daily: { day: number; sen: number }[];
 }) {
+  const { t } = useI18n();
   const total = daily.reduce((a, d) => a + d.sen, 0);
   if (total === 0) return null;
   const data = daily.map((d) => ({ day: d.day, v: d.sen / 100 }));
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-      <p className="text-sm font-medium text-gray-900">Daily spending</p>
+      <p className="text-sm font-medium text-gray-900">{t("sparkline.dailySpending")}</p>
       <div className="mt-2 h-16">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>

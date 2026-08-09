@@ -1,5 +1,6 @@
 import { formatRM } from "@/lib/money";
 import { useMoneyPrivacy, mask } from "@/components/money-privacy";
+import { useI18n } from "@/lib/i18n-client";
 import type { Kpis } from "@/lib/stats";
 
 function Tile({
@@ -24,6 +25,7 @@ function Tile({
 // The four Reports KPI tiles: Income · Expenses · Net · Savings rate.
 export default function KpiTiles({ kpis }: { kpis: Kpis }) {
   const { hidden } = useMoneyPrivacy();
+  const { t } = useI18n();
   const netTone = kpis.netSen >= 0 ? "text-emerald-600" : "text-red-600";
   const rate = kpis.savingsRatePct === null ? "—" : `${kpis.savingsRatePct}%`;
   const rateTone =
@@ -33,10 +35,10 @@ export default function KpiTiles({ kpis }: { kpis: Kpis }) {
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      <Tile label="Income" value={mask(hidden, formatRM(kpis.incomeSen))} tone="text-emerald-600" />
-      <Tile label="Expenses" value={mask(hidden, formatRM(kpis.expenseSen))} tone="text-gray-900" />
-      <Tile label="Net" value={mask(hidden, formatRM(kpis.netSen))} tone={netTone} />
-      <Tile label="Savings rate" value={rate} tone={rateTone} />
+      <Tile label={t("kpi.income")} value={mask(hidden, formatRM(kpis.incomeSen))} tone="text-emerald-600" />
+      <Tile label={t("kpi.expenses")} value={mask(hidden, formatRM(kpis.expenseSen))} tone="text-gray-900" />
+      <Tile label={t("kpi.net")} value={mask(hidden, formatRM(kpis.netSen))} tone={netTone} />
+      <Tile label={t("kpi.savingsRate")} value={rate} tone={rateTone} />
     </div>
   );
 }

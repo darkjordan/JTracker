@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { formatSen } from "@/lib/money";
+import { useI18n } from "@/lib/i18n-client";
 import type { CategorySlice } from "@/lib/stats";
 
 // Spending-by-category donut with a tappable legend that filters the list.
@@ -16,12 +17,13 @@ export default function CategoryDonut({
   activeId: string | null;
   onSelect: (id: string | null) => void;
 }) {
+  const { t } = useI18n();
   if (slices.length === 0) return null;
   const toggle = (id: string) => onSelect(id === activeId ? null : id);
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-      <p className="text-sm font-medium text-gray-900">Spending by category</p>
+      <p className="text-sm font-medium text-gray-900">{t("donut.spendingByCategory")}</p>
 
       <div className="relative mt-2 h-48">
         <ResponsiveContainer width="100%" height="100%">
@@ -49,7 +51,7 @@ export default function CategoryDonut({
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xs text-gray-400">Spent</span>
+          <span className="text-xs text-gray-400">{t("donut.spent")}</span>
           <span className="text-xl font-bold tabular-nums text-gray-900">
             {formatSen(totalSen)}
           </span>

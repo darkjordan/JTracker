@@ -175,6 +175,30 @@ const en: Dict = {
   "settings.exportPreparing": "Preparing…",
   "settings.version": "Version",
   "settings.forceRefresh": "Force refresh",
+
+  // KPI tiles / charts
+  "kpi.income": "Income",
+  "kpi.expenses": "Expenses",
+  "kpi.net": "Net",
+  "kpi.savingsRate": "Savings rate",
+  "donut.spendingByCategory": "Spending by category",
+  "donut.spent": "Spent",
+  "cashflow.title": "Cash flow",
+  "cashflow.income": "Income RM {amount}",
+  "cashflow.saved": "Saved {amount}",
+  "cashflow.overspentBy": "Overspent by {amount}",
+  "sparkline.dailySpending": "Daily spending",
+  "trend.last6Months": "Last 6 months",
+  "trend.income": "Income",
+  "trend.expense": "Expense",
+  "trend.net": "Net",
+  "scope.dataScope": "Data scope",
+  "scope.household": "Household",
+  "scope.myself": "Myself",
+  "install.installApp": "⤓ Install JTracker app",
+  "install.iosHelp": "In Safari: tap the Share button, then “Add to Home Screen”.",
+  "install.otherHelp":
+    "In your browser menu, choose “Install app” or “Add to Home Screen”.",
 };
 
 const zh: Dict = {
@@ -320,6 +344,28 @@ const zh: Dict = {
   "settings.exportPreparing": "准备中…",
   "settings.version": "版本",
   "settings.forceRefresh": "强制刷新",
+
+  "kpi.income": "收入",
+  "kpi.expenses": "支出",
+  "kpi.net": "净额",
+  "kpi.savingsRate": "储蓄率",
+  "donut.spendingByCategory": "按类别支出",
+  "donut.spent": "已花费",
+  "cashflow.title": "现金流",
+  "cashflow.income": "收入 RM {amount}",
+  "cashflow.saved": "已储蓄 {amount}",
+  "cashflow.overspentBy": "超支 {amount}",
+  "sparkline.dailySpending": "每日支出",
+  "trend.last6Months": "近 6 个月",
+  "trend.income": "收入",
+  "trend.expense": "支出",
+  "trend.net": "净额",
+  "scope.dataScope": "数据范围",
+  "scope.household": "家庭",
+  "scope.myself": "个人",
+  "install.installApp": "⤓ 安装 JTracker 应用",
+  "install.iosHelp": "在 Safari 中：点击分享按钮，然后选择“添加到主屏幕”。",
+  "install.otherHelp": "在浏览器菜单中，选择“安装应用”或“添加到主屏幕”。",
 };
 
 const ms: Dict = {
@@ -468,6 +514,29 @@ const ms: Dict = {
   "settings.exportPreparing": "Menyediakan…",
   "settings.version": "Versi",
   "settings.forceRefresh": "Muat semula paksa",
+
+  "kpi.income": "Pendapatan",
+  "kpi.expenses": "Perbelanjaan",
+  "kpi.net": "Bersih",
+  "kpi.savingsRate": "Kadar simpanan",
+  "donut.spendingByCategory": "Perbelanjaan mengikut kategori",
+  "donut.spent": "Dibelanjakan",
+  "cashflow.title": "Aliran tunai",
+  "cashflow.income": "Pendapatan RM {amount}",
+  "cashflow.saved": "Disimpan {amount}",
+  "cashflow.overspentBy": "Terlebih belanja {amount}",
+  "sparkline.dailySpending": "Perbelanjaan harian",
+  "trend.last6Months": "6 bulan terakhir",
+  "trend.income": "Pendapatan",
+  "trend.expense": "Perbelanjaan",
+  "trend.net": "Bersih",
+  "scope.dataScope": "Skop data",
+  "scope.household": "Isi Rumah",
+  "scope.myself": "Sendiri",
+  "install.installApp": "⤓ Pasang aplikasi JTracker",
+  "install.iosHelp": "Dalam Safari: ketik butang Kongsi, kemudian “Tambah ke Skrin Utama”.",
+  "install.otherHelp":
+    "Dalam menu pelayar anda, pilih “Pasang aplikasi” atau “Tambah ke Skrin Utama”.",
 };
 
 const messages: Record<Lang, Dict> = { en, zh, ms };

@@ -9,10 +9,12 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatSen } from "@/lib/money";
+import { useI18n } from "@/lib/i18n-client";
 import type { MonthPoint } from "@/lib/stats";
 
 // 6-month income vs expense bars with a net line.
 export default function TrendChart({ points }: { points: MonthPoint[] }) {
+  const { t } = useI18n();
   const data = points.map((p) => ({
     label: p.label,
     Income: p.incomeSen / 100,
@@ -24,7 +26,7 @@ export default function TrendChart({ points }: { points: MonthPoint[] }) {
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-      <p className="text-sm font-medium text-gray-900">Last 6 months</p>
+      <p className="text-sm font-medium text-gray-900">{t("trend.last6Months")}</p>
       <div className="mt-2 h-48">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
@@ -49,15 +51,15 @@ export default function TrendChart({ points }: { points: MonthPoint[] }) {
       <div className="mt-1 flex justify-center gap-4 text-xs text-gray-500">
         <span className="flex items-center gap-1">
           <i className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-          Income
+          {t("trend.income")}
         </span>
         <span className="flex items-center gap-1">
           <i className="inline-block h-2 w-2 rounded-full bg-indigo-500" />
-          Expense
+          {t("trend.expense")}
         </span>
         <span className="flex items-center gap-1">
           <i className="inline-block h-2 w-2 rounded-full bg-gray-900" />
-          Net
+          {t("trend.net")}
         </span>
       </div>
     </div>
