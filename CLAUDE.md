@@ -349,9 +349,43 @@ CSV export, Supabase client/server + anon-session proxy.
   `/goals` page + `GoalCard` follow the existing accounts-page +
   `plan-card.tsx` patterns (inline-editable current amount, full Edit toggle,
   progress bar). Nav link added to Dashboard.
-- **In progress: Phase 9** (i18n EN/中文/BM full app, offline quick-entry
-  queue, share_target, SSO nudge) — being built now, staged as separate
-  commits/gates. Offline queue + share_target need real-device confirmation
-  before push (Background Sync unsupported on iOS Safari; share_target needs
-  an installed PWA in the OS share sheet) — per rule #1, will flag explicitly
-  when that stage is ready rather than assume it works from a dev-server test.
+- **Phase 9 i18n DONE + LIVE (2026-08-09):** ported JKira's exact pattern
+  (`src/lib/i18n.ts` flat dicts + `t()`/`getT()`, `i18n-client.tsx`
+  LanguageProvider/useI18n with cookie+localStorage, `i18n-server.ts` for the
+  now-async root layout incl. `generateMetadata()` for the localized meta
+  description). Every page and component translated EN/中文/BM — ~30 files.
+  `KIND_LABELS` record constants in `networth.ts`/`networth-items.ts` became
+  `kindLabel(kind, t)` functions since a per-language value can't live in a
+  plain constant. Verified live via Playwright: switch persists across
+  reload/navigation, direct-cookie navigation renders each language
+  correctly on Goals/Settings/Recurring.
+- **Phase 9 SSO nudge DONE + LIVE (2026-08-09):** dismissible banner
+  (`sso-nudge.tsx`) shown to anonymous users once they have ≥1 transaction,
+  motivated by `purge_stale_anon` actually deleting inactive anonymous data —
+  a real data-loss risk, not just a growth prompt. One-time dismiss via
+  localStorage, not a recurring nag.
+- **Phase 9 offline queue + share_target BUILT, tested headlessly, NOT
+  pushed (2026-08-09):** `share_target` added to the manifest;
+  `/share-target` route stages a shared image in the new private
+  `shared-captures` Storage bucket (same per-user-folder RLS pattern as
+  `statements`) and redirects to `/?shared=<path>`; the Dashboard downloads
+  it and feeds it into the *existing* `ScanButton`/`CaptureReview` pipeline
+  via a new `autoFile` prop — no second capture path. `src/lib/offline-queue.ts`
+  (raw IndexedDB, no new dependency) queues a quick-entry when
+  `!navigator.onLine` or the save request fails; `quick-entry.tsx` shows it
+  optimistically and a distinct "Saved offline" toast; draining happens via
+  the page's own authenticated client on mount + `online` events (a
+  service-worker Background Sync registration is wired as a pure
+  best-effort wake-up, since Background Sync has no iOS Safari support —
+  correctness never depends on it). Creating a *new* category while offline
+  is explicitly unsupported (needs the network to resolve/insert it) and
+  shows a clear message rather than silently failing.
+  **Verified headlessly via Playwright**: full offline→queue→reconnect→drain
+  cycle against live IndexedDB + Supabase (queued entry shows optimistically,
+  persists in IndexedDB, auto-drains and lands as a real row on reconnect);
+  `/share-target`'s POST→upload→redirect→download round-trip against the
+  live storage bucket. **What's NOT verified and can't be without a real
+  device**: the actual OS share sheet offering "JTracker" as a target (needs
+  an installed PWA), and Background Sync's real wake-up behavior. Per rule
+  #1, this is committed locally but **not pushed** — needs the user's
+  real-device confirmation first.

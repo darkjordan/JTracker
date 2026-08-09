@@ -19,5 +19,16 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "maskable",
       },
     ],
-  };
+    // Lets the OS share sheet offer "JTracker" as a target for a shared
+    // photo (e.g. a receipt from the gallery). Received at /share-target,
+    // which hands off into the existing scan-capture review flow.
+    share_target: {
+      action: "/share-target",
+      method: "POST",
+      enctype: "multipart/form-data",
+      params: {
+        files: [{ name: "file", accept: ["image/*"] }],
+      },
+    },
+  } as MetadataRoute.Manifest;
 }

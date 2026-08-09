@@ -67,6 +67,8 @@ const en: Dict = {
   "entry.enterAmount": "Enter an amount.",
   "entry.nameNewCategory": "Name the new category, or pick one.",
   "entry.saveFailed": "Couldn't save. Try again.",
+  "entry.offlineNewCategory": "You're offline — pick an existing category, or connect to add a new one.",
+  "entry.savedOffline": "Saved offline — will sync when you're back online.",
 
   // month switcher / history
   "hist.prevMonth": "Previous month",
@@ -485,6 +487,8 @@ const zh: Dict = {
   "entry.enterAmount": "请输入金额。",
   "entry.nameNewCategory": "请命名新类别，或选择一个。",
   "entry.saveFailed": "保存失败，请重试。",
+  "entry.offlineNewCategory": "您目前离线 — 请选择现有类别，或连接网络后再新增类别。",
+  "entry.savedOffline": "已离线保存 — 重新联网后将自动同步。",
 
   "hist.prevMonth": "上个月",
   "hist.nextMonth": "下个月",
@@ -865,6 +869,8 @@ const ms: Dict = {
   "entry.enterAmount": "Masukkan jumlah.",
   "entry.nameNewCategory": "Namakan kategori baharu, atau pilih satu.",
   "entry.saveFailed": "Gagal simpan. Cuba lagi.",
+  "entry.offlineNewCategory": "Anda di luar talian — pilih kategori sedia ada, atau sambung untuk tambah baharu.",
+  "entry.savedOffline": "Disimpan luar talian — akan disegerakkan apabila anda kembali dalam talian.",
 
   "hist.prevMonth": "Bulan sebelum",
   "hist.nextMonth": "Bulan seterusnya",

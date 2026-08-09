@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { formatSen, normalizeMerchant } from "@/lib/money";
 import { createTransaction, todayLocal } from "@/lib/api/transactions";
 import { findOrCreateCategory } from "@/lib/api/categories";
+import { enqueue } from "@/lib/offline-queue";
 import AmountInput from "@/components/amount-input";
 import { useI18n } from "@/lib/i18n-client";
 import type { Category, Transaction, TxType } from "@/lib/api/types";
@@ -17,10 +18,12 @@ export default function QuickEntry({
   categories,
   onAdded,
   onCategoryCreated,
+  onQueuedOffline,
 }: {
   categories: Category[];
   onAdded: (t: Transaction) => void;
   onCategoryCreated?: () => void;
+  onQueuedOffline?: () => void;
 }) {
   const [type, setType] = useState<TxType>("expense");
   const [amountSen, setAmountSen] = useState(0);
@@ -58,6 +61,17 @@ export default function QuickEntry({
     }
     setError(null);
     setBusy(true);
+
+    const offline = typeof navigator !== "undefined" && !navigator.onLine;
+    // Creating a new category needs the network to resolve/insert it — not
+    // something the offline queue can defer, so that combination is the one
+    // offline path we don't support.
+    if (offline && categoryId === OTHER) {
+      setError(t("entry.offlineNewCategory"));
+      setBusy(false);
+      return;
+    }
+
     try {
       let category_id: string | null = null;
       let created = false;
@@ -75,15 +89,38 @@ export default function QuickEntry({
         category_id = categoryId;
       }
 
-      const txn = await createTransaction({
+      const payload = {
         type,
         amount_sen: sen,
         merchant: merchant.trim() || (isIncome ? "Income" : "Expense"),
         merchant_norm: normalizeMerchant(merchant),
         category_id,
         occurred_at: date,
-        source: "manual",
-      });
+        source: "manual" as const,
+      };
+
+      let txn: Transaction;
+      try {
+        if (offline) throw new Error("offline");
+        txn = await createTransaction(payload);
+      } catch {
+        // Either genuinely offline, or the request itself failed (also
+        // treated as offline — a spotty connection looks the same to the
+        // user either way). Queue it and show it optimistically; the real
+        // row lands once drainQueue() syncs it.
+        await enqueue(payload);
+        txn = {
+          id: `offline-${crypto.randomUUID()}`,
+          user_id: "",
+          currency: "MYR",
+          tax_relief_code: null,
+          note: null,
+          reviewed: false,
+          created_at: new Date().toISOString(),
+          ...payload,
+        };
+        onQueuedOffline?.();
+      }
 
       setAmountSen(0);
       setMerchant("");

@@ -25,6 +25,8 @@ import { listCategories } from "@/lib/api/categories";
 import { listReliefs } from "@/lib/api/tax-relief";
 import { getHousehold } from "@/lib/api/household";
 import { getAdEligibility } from "@/lib/api/promo";
+import { downloadSharedCapture } from "@/lib/api/shared-captures";
+import { drainQueue } from "@/lib/offline-queue";
 import { createClient } from "@/lib/supabase/client";
 import { memberBadges, type MemberBadge } from "@/lib/member-colors";
 import type { ReliefRow } from "@/lib/relief";
@@ -32,6 +34,7 @@ import {
   listTransactionsForMonth,
   listRangeLite,
   setReviewed,
+  createTransaction,
 } from "@/lib/api/transactions";
 import {
   computeKpis,
@@ -74,6 +77,7 @@ export default function Dashboard() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showAd, setShowAd] = useState(false);
   const [isAnon, setIsAnon] = useState(false);
+  const [sharedFile, setSharedFile] = useState<File | null>(null);
   const { t } = useI18n();
 
   useEffect(() => {
@@ -85,6 +89,49 @@ export default function Dashboard() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setScope(saved);
     }
+  }, []);
+
+  useEffect(() => {
+    // Web Share Target handoff: /share-target staged the image and
+    // redirected here with ?shared=<path>. Pull it down and feed it into
+    // ScanButton's existing review flow, then scrub the query param so a
+    // reload/back-nav doesn't re-trigger it.
+    const path = new URLSearchParams(window.location.search).get("shared");
+    if (!path) return;
+    setTab("add");
+    (async () => {
+      try {
+        const file = await downloadSharedCapture(path);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSharedFile(file);
+      } catch {
+        /* staged file expired or already consumed — nothing to recover */
+      }
+      window.history.replaceState(null, "", "/");
+    })();
+  }, []);
+
+  useEffect(() => {
+    // Drain the offline quick-entry queue on mount and whenever the browser
+    // regains connectivity. A service worker Background Sync wake-up (where
+    // supported) also triggers this via a postMessage in service-worker.tsx
+    // — but correctness never depends on that, only on these two triggers,
+    // since Background Sync isn't supported on iOS Safari at all.
+    async function drain() {
+      const synced = await drainQueue(createTransaction).catch(() => 0);
+      if (synced > 0) load(sel.y, sel.m, scope);
+    }
+    function onSwMessage(e: MessageEvent) {
+      if (e.data?.type === "drain-quick-entry-queue") drain();
+    }
+    drain();
+    window.addEventListener("online", drain);
+    navigator.serviceWorker?.addEventListener("message", onSwMessage);
+    return () => {
+      window.removeEventListener("online", drain);
+      navigator.serviceWorker?.removeEventListener("message", onSwMessage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function changeScope(next: Scope) {
@@ -241,6 +288,14 @@ export default function Dashboard() {
             <QuickEntry
               categories={categories}
               onAdded={(txn) => {
+                if (txn.id.startsWith("offline-")) {
+                  // Queued, not saved — reloading from the network would
+                  // just fail while offline. Show it in the list optimistically;
+                  // the real load() runs once drainQueue() syncs it.
+                  setTxns((prev) => [txn, ...prev]);
+                  setToastMsg(t("entry.savedOffline"));
+                  return;
+                }
                 load(sel.y, sel.m, scope);
                 setToastMsg(
                   t(
@@ -256,6 +311,8 @@ export default function Dashboard() {
             <ScanButton
               categories={categories}
               reliefs={reliefs}
+              autoFile={sharedFile}
+              onAutoFileHandled={() => setSharedFile(null)}
               onSaved={() => {
                 load(sel.y, sel.m, scope);
                 setToastMsg(t("entry.savedFromScan"));
