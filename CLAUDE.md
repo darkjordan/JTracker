@@ -92,6 +92,8 @@ Management API (**one statement per call**). Keep migrations in `supabase/migrat
 ## Environment variables (names only; set in `.env.local` + Vercel)
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and (Edge Function
 secrets, server-side) `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` as needed.
+`NEXT_PUBLIC_ADSENSE_CLIENT_ID`, `NEXT_PUBLIC_ADSENSE_DASHBOARD_SLOT` — ads
+(see status below); the ad slot silently no-ops until both are set.
 
 ## Current status (keep short; update as phases ship)
 **Phase 1 DONE** (money core + manual entry). Gate passed: Vitest 15/15
@@ -302,4 +304,21 @@ CSV export, Supabase client/server + anon-session proxy.
   uid sees 0 rows), full Playwright pass (setup/confirm-mismatch/unlock/add
   item/lock/wrong-PIN/lockout) against a real (non-anonymous) confirmed test
   account.
+- **Ads + promo-code back office (2026-08-09):** additive, not part of the
+  phased plan. Migration `0016_ads_promo_codes.sql`: `app_admins` (seeded with
+  jordan.chin90@gmail.com) + `is_app_admin()`/`am_i_admin()` — the app's first
+  admin concept, modeled on the networth-PIN gate (server-side-enforced via
+  SECURITY DEFINER, never client-trusted). `app_settings` single-row table =
+  master kill-switch (`ads_enabled`) + configurable grace period
+  (`ad_grace_days`, default 7) before a new account sees any ad. `promo_codes`
+  + `promo_redemptions` (one redemption per user, permanent) + RPC
+  `redeem_promo_code` (rejects anonymous callers — an unlock tied to an
+  anon session could be lost to `purge_stale_anon`). `src/lib/ads.ts`
+  (`isWithinGracePeriod`, pure + tested) + `src/lib/api/promo.ts` + ad slot
+  `src/components/ad-banner.tsx` (renders nothing until AdSense env vars are
+  set) wired into the Dashboard (`src/app/page.tsx`). Redeem UI in
+  `/settings`; admin back office at `/admin` (master switch + code CRUD).
+  **Inert until the user completes AdSense site approval and sets
+  `NEXT_PUBLIC_ADSENSE_CLIENT_ID`/`NEXT_PUBLIC_ADSENSE_DASHBOARD_SLOT`** in
+  `.env.local` + Vercel — that step is external and can't be done for them.
 - **Next: Phase 8** (Goals), then Phase 9 (i18n EN/中文/BM). PWA + SSO shipped.

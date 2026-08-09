@@ -8,6 +8,12 @@ import { listCategories } from "@/lib/api/categories";
 import { transactionsToCsv, downloadCsv } from "@/lib/csv";
 import { listImports, rollbackImport, type ImportRow } from "@/lib/api/imports";
 import { buildLabel } from "@/lib/version";
+import {
+  getAdFreeStatus,
+  redeemPromoCode,
+  isAdmin,
+  type RedeemResult,
+} from "@/lib/api/promo";
 
 type Account = { email: string | null; anonymous: boolean } | null;
 
@@ -37,6 +43,11 @@ export default function SettingsPage() {
   const [signingOut, setSigningOut] = useState(false);
   const [imports, setImports] = useState<ImportRow[]>([]);
   const [rollingBack, setRollingBack] = useState<string | null>(null);
+  const [adFree, setAdFree] = useState(false);
+  const [admin, setAdmin] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemMsg, setRedeemMsg] = useState<string | null>(null);
 
   const loadAccount = useCallback(async () => {
     const supabase = createClient();
@@ -56,12 +67,47 @@ export default function SettingsPage() {
     }
   }, []);
 
+  const loadAds = useCallback(async () => {
+    try {
+      const [free, adm] = await Promise.all([getAdFreeStatus(), isAdmin()]);
+      setAdFree(free);
+      setAdmin(adm);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     (async () => {
       await loadAccount();
       await loadImports();
+      await loadAds();
     })();
-  }, [loadAccount, loadImports]);
+  }, [loadAccount, loadImports, loadAds]);
+
+  async function redeem() {
+    if (!promoCode.trim()) return;
+    setRedeeming(true);
+    setRedeemMsg(null);
+    try {
+      const result: RedeemResult = await redeemPromoCode(promoCode.trim());
+      const messages: Record<RedeemResult, string> = {
+        ok: "Ads removed!",
+        already: "You've already unlocked ad-free.",
+        invalid: "That code isn't valid.",
+        exhausted: "That code has been fully used.",
+      };
+      setRedeemMsg(messages[result]);
+      if (result === "ok" || result === "already") {
+        setAdFree(true);
+        setPromoCode("");
+      }
+    } catch {
+      setRedeemMsg("Couldn't redeem that code. Try again.");
+    } finally {
+      setRedeeming(false);
+    }
+  }
 
   async function undoImport(imp: ImportRow) {
     if (!confirm(`Remove this import and its ${imp.txn_count} transactions?`)) return;
@@ -147,6 +193,54 @@ export default function SettingsPage() {
           </>
         )}
       </section>
+
+      {/* Ads */}
+      <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
+        <h2 className="text-sm font-semibold text-gray-900">Ads</h2>
+        {adFree ? (
+          <p className="mt-2 text-sm font-medium text-emerald-600">
+            ✓ Ads removed
+          </p>
+        ) : signedIn ? (
+          <>
+            <p className="mt-1 text-xs text-gray-500">
+              Have a promo code? Redeem it to remove ads permanently.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="Promo code"
+                className="min-w-0 flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={redeem}
+                disabled={redeeming || !promoCode.trim()}
+                className="shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {redeeming ? "…" : "Redeem"}
+              </button>
+            </div>
+            {redeemMsg && (
+              <p className="mt-2 text-xs text-gray-600">{redeemMsg}</p>
+            )}
+          </>
+        ) : (
+          <p className="mt-1 text-xs text-gray-500">
+            Sign in to redeem a promo code.
+          </p>
+        )}
+      </section>
+
+      {admin && (
+        <p className="mt-3 px-1 text-right text-xs">
+          <Link href="/admin" className="font-medium text-indigo-600">
+            Back office →
+          </Link>
+        </p>
+      )}
 
       {/* Imported statements */}
       {imports.length > 0 && (
