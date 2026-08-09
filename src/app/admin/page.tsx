@@ -8,6 +8,7 @@ import {
   updateAdSettings,
   listPromoCodes,
   createPromoCode,
+  updatePromoCode,
   setPromoCodeActive,
   deletePromoCode,
   listPromoRedemptions,
@@ -33,6 +34,13 @@ export default function AdminPage() {
 
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [revoking, setRevoking] = useState<string | null>(null);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCode, setEditCode] = useState("");
+  const [editLabel, setEditLabel] = useState("");
+  const [editMax, setEditMax] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editMsg, setEditMsg] = useState<string | null>(null);
 
   const loadCodes = useCallback(async () => {
     setCodes(await listPromoCodes());
@@ -93,6 +101,37 @@ export default function AdminPage() {
   async function toggleActive(c: PromoCode) {
     await setPromoCodeActive(c.id, !c.active);
     await loadCodes();
+  }
+
+  function startEdit(c: PromoCode) {
+    setEditingId(c.id);
+    setEditCode(c.code);
+    setEditLabel(c.label ?? "");
+    setEditMax(c.max_redemptions?.toString() ?? "");
+    setEditMsg(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  async function saveEdit(id: string) {
+    if (!editCode.trim()) return;
+    setSaving(true);
+    setEditMsg(null);
+    try {
+      await updatePromoCode(id, {
+        code: editCode.trim(),
+        label: editLabel.trim() || null,
+        max_redemptions: editMax ? Number(editMax) : null,
+      });
+      setEditingId(null);
+      await loadCodes();
+    } catch {
+      setEditMsg("Couldn't save — that code may already exist.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function removeCode(c: PromoCode) {
@@ -236,38 +275,98 @@ export default function AdminPage() {
               No codes yet.
             </li>
           )}
-          {codes.map((c) => (
-            <li key={c.id} className="flex items-center gap-3 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-mono text-sm font-medium text-gray-900">
-                  {c.code}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {c.label ? `${c.label} · ` : ""}
-                  {c.redemption_count} /{" "}
-                  {c.max_redemptions ?? "unlimited"} redeemed
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => toggleActive(c)}
-                className={`shrink-0 rounded-lg px-2 py-1 text-xs font-semibold ${
-                  c.active
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-gray-100 text-gray-500"
-                }`}
-              >
-                {c.active ? "Active" : "Inactive"}
-              </button>
-              <button
-                type="button"
-                onClick={() => removeCode(c)}
-                className="shrink-0 text-xs font-semibold text-red-600"
-              >
-                Delete
-              </button>
-            </li>
-          ))}
+          {codes.map((c) =>
+            editingId === c.id ? (
+              <li key={c.id} className="space-y-2 py-3">
+                <input
+                  type="text"
+                  value={editCode}
+                  onChange={(e) => setEditCode(e.target.value)}
+                  placeholder="Code"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
+                />
+                <input
+                  type="text"
+                  value={editLabel}
+                  onChange={(e) => setEditLabel(e.target.value)}
+                  placeholder="Label (optional)"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
+                />
+                <input
+                  type="number"
+                  min={c.redemption_count || 0}
+                  value={editMax}
+                  onChange={(e) => setEditMax(e.target.value)}
+                  placeholder="Max redemptions (blank = unlimited)"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
+                />
+                {editMax !== "" && Number(editMax) < c.redemption_count && (
+                  <p className="text-xs text-amber-600">
+                    Already redeemed {c.redemption_count} times — setting a
+                    lower max just blocks further redemptions, it won't
+                    revoke existing ones.
+                  </p>
+                )}
+                {editMsg && <p className="text-xs text-red-600">{editMsg}</p>}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => saveEdit(c.id)}
+                    disabled={saving || !editCode.trim()}
+                    className="flex-1 rounded-xl bg-indigo-600 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    {saving ? "Saving…" : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    disabled={saving}
+                    className="flex-1 rounded-xl border border-gray-300 py-2 text-sm font-semibold text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </li>
+            ) : (
+              <li key={c.id} className="flex items-center gap-3 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-sm font-medium text-gray-900">
+                    {c.code}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {c.label ? `${c.label} · ` : ""}
+                    {c.redemption_count} /{" "}
+                    {c.max_redemptions ?? "unlimited"} redeemed
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => startEdit(c)}
+                  className="shrink-0 text-xs font-semibold text-indigo-600"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleActive(c)}
+                  className={`shrink-0 rounded-lg px-2 py-1 text-xs font-semibold ${
+                    c.active
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {c.active ? "Active" : "Inactive"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeCode(c)}
+                  className="shrink-0 text-xs font-semibold text-red-600"
+                >
+                  Delete
+                </button>
+              </li>
+            )
+          )}
         </ul>
       </section>
 

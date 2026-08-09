@@ -94,6 +94,22 @@ export async function createPromoCode(input: {
   if (error) throw error;
 }
 
+export async function updatePromoCode(
+  id: string,
+  patch: Partial<{
+    code: string;
+    label: string | null;
+    max_redemptions: number | null;
+  }>
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("promo_codes")
+    .update(patch)
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function setPromoCodeActive(
   id: string,
   active: boolean
