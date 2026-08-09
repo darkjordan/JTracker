@@ -5,6 +5,7 @@ import { normalizeMerchant } from "@/lib/money";
 import { createTransaction, todayLocal } from "@/lib/api/transactions";
 import { getMerchantMemory, rememberMerchant } from "@/lib/api/merchant-memory";
 import AmountInput from "@/components/amount-input";
+import { useI18n } from "@/lib/i18n-client";
 import type { Category, TxType } from "@/lib/api/types";
 import type { ParsedCapture } from "@/lib/capture";
 import type { ReliefRow } from "@/lib/relief";
@@ -39,6 +40,7 @@ export default function CaptureReview({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromMemory, setFromMemory] = useState(false);
+  const { t } = useI18n();
 
   const options = categories.filter((c) => c.type === type || c.type === "both");
 
@@ -65,7 +67,7 @@ export default function CaptureReview({
 
   async function save() {
     if (amountSen <= 0) {
-      setError("Enter a valid amount.");
+      setError(t("txn.invalidAmount"));
       return;
     }
     setBusy(true);
@@ -86,7 +88,7 @@ export default function CaptureReview({
       onSaved();
       onClose();
     } catch {
-      setError("Couldn’t save. Try again.");
+      setError(t("txn.saveFailed"));
       setBusy(false);
     }
   }
@@ -105,36 +107,36 @@ export default function CaptureReview({
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300" />
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">Review scan</h2>
-          <span className="text-xs text-gray-400">Check, then save</span>
+          <h2 className="text-sm font-semibold text-gray-900">{t("review.title")}</h2>
+          <span className="text-xs text-gray-400">{t("review.checkThenSave")}</span>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          {(["expense", "income"] as TxType[]).map((t) => (
+          {(["expense", "income"] as TxType[]).map((ty) => (
             <button
-              key={t}
+              key={ty}
               type="button"
-              onClick={() => setType(t)}
-              className={`rounded-xl py-2 text-sm font-semibold capitalize ${
-                type === t ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-600"
+              onClick={() => setType(ty)}
+              className={`rounded-xl py-2 text-sm font-semibold ${
+                type === ty ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-600"
               }`}
             >
-              {t}
+              {t(ty === "expense" ? "txn.expense" : "txn.income")}
             </button>
           ))}
         </div>
 
-        <label className="mt-3 block text-xs text-gray-500">Amount (RM)</label>
-        <AmountInput sen={amountSen} onChangeSen={setAmountSen} className={field} />
+        <label className="mt-3 block text-xs text-gray-500">{t("txn.amountRM")}</label>
+        <AmountInput sen={amountSen} onChangeSen={setAmountSen} ariaLabel={t("txn.amountRM")} className={field} />
 
-        <label className="mt-3 block text-xs text-gray-500">Merchant</label>
+        <label className="mt-3 block text-xs text-gray-500">{t("txn.merchant")}</label>
         <input type="text" value={merchant} onChange={(e) => setMerchant(e.target.value)} className={field} />
 
         <label className="mt-3 block text-xs text-gray-500">
-          Category {fromMemory && <span className="text-indigo-600">· remembered</span>}
+          {t("txn.category")} {fromMemory && <span className="text-indigo-600">· {t("review.remembered")}</span>}
         </label>
         <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={`${field} bg-white`}>
-          <option value="">Uncategorized</option>
+          <option value="">{t("entry.uncategorized")}</option>
           {options.map((c) => (
             <option key={c.id} value={c.id}>
               {c.icon ? `${c.icon} ` : ""}
@@ -145,9 +147,9 @@ export default function CaptureReview({
 
         {type === "expense" && reliefs.length > 0 && (
           <>
-            <label className="mt-3 block text-xs text-gray-500">Tax relief (LHDN)</label>
+            <label className="mt-3 block text-xs text-gray-500">{t("txn.taxRelief")}</label>
             <select value={reliefCode} onChange={(e) => setReliefCode(e.target.value)} className={`${field} bg-white`}>
-              <option value="">None</option>
+              <option value="">{t("txn.none")}</option>
               {reliefs.map((r) => (
                 <option key={r.code} value={r.code}>
                   {r.name}
@@ -157,17 +159,17 @@ export default function CaptureReview({
           </>
         )}
 
-        <label className="mt-3 block text-xs text-gray-500">Date</label>
+        <label className="mt-3 block text-xs text-gray-500">{t("txn.date")}</label>
         <input type="date" value={date} max={todayLocal()} onChange={(e) => setDate(e.target.value)} className={field} />
 
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-5 flex gap-2">
           <button type="button" onClick={onClose} disabled={busy} className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-600 disabled:opacity-50">
-            Cancel
+            {t("cancel")}
           </button>
           <button type="button" onClick={save} disabled={busy} className="flex-1 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
-            {busy ? "Saving…" : "Save transaction"}
+            {busy ? t("saving") : t("review.saveTransaction")}
           </button>
         </div>
       </div>

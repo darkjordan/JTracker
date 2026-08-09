@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { parseScreenshot, type ParsedCapture } from "@/lib/capture";
 import CaptureReview from "./capture-review";
+import { useI18n } from "@/lib/i18n-client";
 import type { Category } from "@/lib/api/types";
 import type { ReliefRow } from "@/lib/relief";
 
@@ -20,6 +21,7 @@ export default function ScanButton({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [review, setReview] = useState<ParsedCapture | null>(null);
+  const { t } = useI18n();
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -42,7 +44,7 @@ export default function ScanButton({
         disabled={busy}
         className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 py-2.5 text-sm font-semibold text-indigo-700 disabled:opacity-60"
       >
-        {busy ? "Scanning…" : "📷 Scan a receipt (image or PDF)"}
+        {busy ? t("entry.scanning") : t("entry.scanReceipt")}
       </button>
       <input
         ref={inputRef}

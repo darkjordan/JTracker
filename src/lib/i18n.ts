@@ -54,6 +54,7 @@ const en: Dict = {
   "entry.adding": "Adding…",
   "entry.addExpenseAmount": "Add {amount} expense",
   "entry.addIncomeAmount": "Add {amount} income",
+  "entry.scanning": "Scanning…",
   "entry.scanReceipt": "📷 Scan a receipt (image or PDF)",
   "entry.importStatement": "📄 Import bank statement (PDF)",
   "entry.addedExpense": "Added {amount} expense",
@@ -107,6 +108,12 @@ const en: Dict = {
   "txn.deleteFailed": "Couldn't delete. Try again.",
   "txn.markReviewed": "Mark reviewed",
   "txn.markToReview": "Mark to review",
+
+  // capture review sheet
+  "review.title": "Review scan",
+  "review.checkThenSave": "Check, then save",
+  "review.remembered": "remembered",
+  "review.saveTransaction": "Save transaction",
 
   // goals
   "goals.title": "Goals",
@@ -177,6 +184,7 @@ const zh: Dict = {
   "entry.adding": "添加中…",
   "entry.addExpenseAmount": "添加 {amount} 支出",
   "entry.addIncomeAmount": "添加 {amount} 收入",
+  "entry.scanning": "扫描中…",
   "entry.scanReceipt": "📷 扫描收据（图片或 PDF）",
   "entry.importStatement": "📄 导入银行对账单（PDF）",
   "entry.addedExpense": "已添加 {amount} 支出",
@@ -226,6 +234,11 @@ const zh: Dict = {
   "txn.deleteFailed": "删除失败，请重试。",
   "txn.markReviewed": "标记为已审核",
   "txn.markToReview": "标记为待审核",
+
+  "review.title": "查看扫描结果",
+  "review.checkThenSave": "检查后保存",
+  "review.remembered": "已记住",
+  "review.saveTransaction": "保存交易",
 
   "goals.title": "目标",
   "goals.addName": "目标名称（如 应急基金）",
@@ -293,6 +306,7 @@ const ms: Dict = {
   "entry.adding": "Menambah…",
   "entry.addExpenseAmount": "Tambah perbelanjaan {amount}",
   "entry.addIncomeAmount": "Tambah pendapatan {amount}",
+  "entry.scanning": "Mengimbas…",
   "entry.scanReceipt": "📷 Imbas resit (imej atau PDF)",
   "entry.importStatement": "📄 Import penyata bank (PDF)",
   "entry.addedExpense": "Ditambah perbelanjaan {amount}",
@@ -342,6 +356,11 @@ const ms: Dict = {
   "txn.deleteFailed": "Gagal padam. Cuba lagi.",
   "txn.markReviewed": "Tanda disemak",
   "txn.markToReview": "Tanda untuk disemak",
+
+  "review.title": "Semak imbasan",
+  "review.checkThenSave": "Semak, kemudian simpan",
+  "review.remembered": "diingati",
+  "review.saveTransaction": "Simpan transaksi",
 
   "goals.title": "Matlamat",
   "goals.addName": "Nama matlamat (cth. Dana kecemasan)",
