@@ -25,6 +25,7 @@ import {
   type AdSlotRow,
   type AdNetwork,
 } from "@/lib/api/ad-slots";
+import { useI18n } from "@/lib/i18n-client";
 
 const NETWORKS: AdNetwork[] = ["adsense", "medianet"];
 
@@ -63,6 +64,7 @@ export default function AdminPage() {
   const [editSlotNetwork, setEditSlotNetwork] = useState<AdNetwork>("adsense");
   const [editSlotClientId, setEditSlotClientId] = useState("");
   const [editSlotSlotId, setEditSlotSlotId] = useState("");
+  const { t, lang } = useI18n();
 
   const loadCodes = useCallback(async () => {
     setCodes(await listPromoCodes());
@@ -119,7 +121,7 @@ export default function AdminPage() {
       setNewMax("");
       await loadCodes();
     } catch {
-      setMsg("Couldn't create that code — it may already exist.");
+      setMsg(t("admin.createCodeFailed"));
     } finally {
       setCreating(false);
     }
@@ -155,26 +157,24 @@ export default function AdminPage() {
       setEditingId(null);
       await loadCodes();
     } catch {
-      setEditMsg("Couldn't save — that code may already exist.");
+      setEditMsg(t("admin.saveEditFailed"));
     } finally {
       setSaving(false);
     }
   }
 
   async function removeCode(c: PromoCode) {
-    if (!confirm(`Delete promo code "${c.code}"?`)) return;
+    if (!confirm(t("admin.deleteCodeConfirm", { code: c.code }))) return;
     try {
       await deletePromoCode(c.id);
       await loadCodes();
     } catch {
-      setMsg(
-        `Can't delete "${c.code}" — someone has redeemed it. Revoke their access first.`
-      );
+      setMsg(t("admin.deleteCodeBlocked", { code: c.code }));
     }
   }
 
   async function revoke(r: Redemption) {
-    if (!confirm(`Revoke ad-free access for ${r.email ?? r.user_id}?`)) return;
+    if (!confirm(t("admin.revokeConfirm", { who: r.email ?? r.user_id }))) return;
     setRevoking(r.user_id);
     try {
       await revokePromoRedemption(r.user_id);
@@ -201,7 +201,7 @@ export default function AdminPage() {
       setNewNetwork("adsense");
       await loadAdSlots();
     } catch {
-      setSlotMsg("Couldn't create that placement — it may already exist.");
+      setSlotMsg(t("admin.createSlotFailed"));
     } finally {
       setCreatingSlot(false);
     }
@@ -230,7 +230,7 @@ export default function AdminPage() {
   }
 
   async function removeSlot(s: AdSlotRow) {
-    if (!confirm(`Delete ad placement "${s.placement}"?`)) return;
+    if (!confirm(t("admin.deleteSlotConfirm", { placement: s.placement }))) return;
     await deleteAdSlot(s.placement);
     await loadAdSlots();
   }
@@ -238,7 +238,7 @@ export default function AdminPage() {
   if (!checked) {
     return (
       <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
-        <p className="py-20 text-center text-sm text-gray-400">Loading…</p>
+        <p className="py-20 text-center text-sm text-gray-400">{t("loading")}</p>
       </main>
     );
   }
@@ -247,7 +247,7 @@ export default function AdminPage() {
     return (
       <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
         <p className="py-20 text-center text-sm text-gray-500">
-          Not authorized.
+          {t("admin.notAuthorized")}
         </p>
       </main>
     );
@@ -257,22 +257,22 @@ export default function AdminPage() {
     <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight text-gray-900">
-          Back office
+          {t("admin.backOffice")}
         </h1>
         <Link href="/settings" className="text-sm font-medium text-indigo-600">
-          Done
+          {t("done")}
         </Link>
       </header>
 
       {/* Ads master switch */}
       <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
         <h2 className="text-sm font-semibold text-gray-900">
-          Ads master switch
+          {t("admin.masterSwitch")}
         </h2>
         {settings && (
           <>
             <div className="mt-3 flex items-center justify-between">
-              <span className="text-sm text-gray-700">Ads enabled</span>
+              <span className="text-sm text-gray-700">{t("admin.adsEnabled")}</span>
               <button
                 type="button"
                 onClick={() => saveSettings({ ads_enabled: !settings.ads_enabled })}
@@ -280,7 +280,7 @@ export default function AdminPage() {
                 className={`h-7 w-12 rounded-full transition-colors ${
                   settings.ads_enabled ? "bg-indigo-600" : "bg-gray-300"
                 }`}
-                aria-label="Toggle ads enabled"
+                aria-label={t("admin.toggleAdsEnabled")}
               >
                 <span
                   className={`block h-5 w-5 translate-x-1 rounded-full bg-white transition-transform ${
@@ -290,11 +290,10 @@ export default function AdminPage() {
               </button>
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              Instantly hides ads app-wide, regardless of any account's promo
-              status or grace period.
+              {t("admin.masterSwitchHint")}
             </p>
             <label className="mt-4 block text-sm text-gray-700">
-              Grace period (days before a new account sees any ad)
+              {t("admin.gracePeriodLabel")}
               <input
                 type="number"
                 min={0}
@@ -311,11 +310,9 @@ export default function AdminPage() {
 
       {/* Ad placements */}
       <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-        <h2 className="text-sm font-semibold text-gray-900">Ad placements</h2>
+        <h2 className="text-sm font-semibold text-gray-900">{t("admin.placementsTitle")}</h2>
         <p className="mt-1 text-xs text-gray-500">
-          Each placement is one ad spot in the app, wired to whichever
-          network you choose — different placements can run different
-          networks side by side.
+          {t("admin.placementsHint")}
         </p>
 
         <div className="mt-3 space-y-2">
@@ -323,7 +320,7 @@ export default function AdminPage() {
             type="text"
             value={newPlacement}
             onChange={(e) => setNewPlacement(e.target.value)}
-            placeholder="Placement key (e.g. dashboard)"
+            placeholder={t("admin.placementKeyPlaceholder")}
             className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
           />
           <select
@@ -339,14 +336,14 @@ export default function AdminPage() {
             type="text"
             value={newClientId}
             onChange={(e) => setNewClientId(e.target.value)}
-            placeholder="Client ID (e.g. ca-pub-... or Media.net cid)"
+            placeholder={t("admin.clientIdPlaceholder")}
             className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
           />
           <input
             type="text"
             value={newSlotId}
             onChange={(e) => setNewSlotId(e.target.value)}
-            placeholder="Slot / ad unit ID"
+            placeholder={t("admin.slotIdPlaceholder")}
             className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
           />
           <button
@@ -360,7 +357,7 @@ export default function AdminPage() {
             }
             className="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {creatingSlot ? "Adding…" : "Add new placement"}
+            {creatingSlot ? t("admin.adding") : t("admin.addNewPlacement")}
           </button>
           {slotMsg && <p className="text-xs text-red-600">{slotMsg}</p>}
         </div>
@@ -368,7 +365,7 @@ export default function AdminPage() {
         <ul className="mt-4 divide-y divide-gray-100">
           {adSlots.length === 0 && (
             <li className="py-4 text-center text-sm text-gray-400">
-              No ad placements yet.
+              {t("admin.noPlacements")}
             </li>
           )}
           {adSlots.map((s) =>
@@ -390,14 +387,14 @@ export default function AdminPage() {
                   type="text"
                   value={editSlotClientId}
                   onChange={(e) => setEditSlotClientId(e.target.value)}
-                  placeholder="Client ID"
+                  placeholder={t("admin.clientIdPlaceholder")}
                   className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
                 />
                 <input
                   type="text"
                   value={editSlotSlotId}
                   onChange={(e) => setEditSlotSlotId(e.target.value)}
-                  placeholder="Slot / ad unit ID"
+                  placeholder={t("admin.slotIdPlaceholder")}
                   className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
                 />
                 <div className="flex gap-2">
@@ -406,14 +403,14 @@ export default function AdminPage() {
                     onClick={() => saveEditSlot(s.placement)}
                     className="flex-1 rounded-xl bg-indigo-600 py-2 text-sm font-semibold text-white"
                   >
-                    Save
+                    {t("save")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingPlacement(null)}
                     className="flex-1 rounded-xl border border-gray-300 py-2 text-sm font-semibold text-gray-700"
                   >
-                    Cancel
+                    {t("cancel")}
                   </button>
                 </div>
               </li>
@@ -424,7 +421,7 @@ export default function AdminPage() {
                     {s.placement}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {s.network} · slot {s.slot_id}
+                    {t("admin.slotLabel", { network: s.network, slot: s.slot_id })}
                   </p>
                 </div>
                 <button
@@ -432,7 +429,7 @@ export default function AdminPage() {
                   onClick={() => startEditSlot(s)}
                   className="shrink-0 text-xs font-semibold text-indigo-600"
                 >
-                  Edit
+                  {t("edit")}
                 </button>
                 <button
                   type="button"
@@ -443,14 +440,14 @@ export default function AdminPage() {
                       : "bg-gray-100 text-gray-500"
                   }`}
                 >
-                  {s.enabled ? "Enabled" : "Disabled"}
+                  {s.enabled ? t("admin.enabled") : t("admin.disabled")}
                 </button>
                 <button
                   type="button"
                   onClick={() => removeSlot(s)}
                   className="shrink-0 text-xs font-semibold text-red-600"
                 >
-                  Delete
+                  {t("delete")}
                 </button>
               </li>
             )
@@ -460,21 +457,21 @@ export default function AdminPage() {
 
       {/* Promo codes */}
       <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-        <h2 className="text-sm font-semibold text-gray-900">Promo codes</h2>
+        <h2 className="text-sm font-semibold text-gray-900">{t("admin.promoCodesTitle")}</h2>
 
         <div className="mt-3 space-y-2">
           <input
             type="text"
             value={newCode}
             onChange={(e) => setNewCode(e.target.value)}
-            placeholder="Code (e.g. FRIENDSFAM)"
+            placeholder={t("admin.codePlaceholder")}
             className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
           />
           <input
             type="text"
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
-            placeholder="Label (optional)"
+            placeholder={t("admin.labelOptional")}
             className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
           />
           <input
@@ -482,7 +479,7 @@ export default function AdminPage() {
             min={1}
             value={newMax}
             onChange={(e) => setNewMax(e.target.value)}
-            placeholder="Max redemptions (blank = unlimited)"
+            placeholder={t("admin.maxRedemptionsPlaceholder")}
             className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
           />
           <button
@@ -491,7 +488,7 @@ export default function AdminPage() {
             disabled={creating || !newCode.trim()}
             className="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {creating ? "Creating…" : "Create code"}
+            {creating ? t("admin.creating") : t("admin.createCode")}
           </button>
           {msg && <p className="text-xs text-red-600">{msg}</p>}
         </div>
@@ -499,7 +496,7 @@ export default function AdminPage() {
         <ul className="mt-4 divide-y divide-gray-100">
           {codes.length === 0 && (
             <li className="py-4 text-center text-sm text-gray-400">
-              No codes yet.
+              {t("admin.noCodes")}
             </li>
           )}
           {codes.map((c) =>
@@ -509,14 +506,14 @@ export default function AdminPage() {
                   type="text"
                   value={editCode}
                   onChange={(e) => setEditCode(e.target.value)}
-                  placeholder="Code"
+                  placeholder={t("admin.codePlaceholder")}
                   className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
                 />
                 <input
                   type="text"
                   value={editLabel}
                   onChange={(e) => setEditLabel(e.target.value)}
-                  placeholder="Label (optional)"
+                  placeholder={t("admin.labelOptional")}
                   className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
                 />
                 <input
@@ -524,14 +521,12 @@ export default function AdminPage() {
                   min={c.redemption_count || 0}
                   value={editMax}
                   onChange={(e) => setEditMax(e.target.value)}
-                  placeholder="Max redemptions (blank = unlimited)"
+                  placeholder={t("admin.maxRedemptionsPlaceholder")}
                   className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
                 />
                 {editMax !== "" && Number(editMax) < c.redemption_count && (
                   <p className="text-xs text-amber-600">
-                    Already redeemed {c.redemption_count} times — setting a
-                    lower max just blocks further redemptions, it won't
-                    revoke existing ones.
+                    {t("admin.alreadyRedeemedWarning", { n: c.redemption_count })}
                   </p>
                 )}
                 {editMsg && <p className="text-xs text-red-600">{editMsg}</p>}
@@ -542,7 +537,7 @@ export default function AdminPage() {
                     disabled={saving || !editCode.trim()}
                     className="flex-1 rounded-xl bg-indigo-600 py-2 text-sm font-semibold text-white disabled:opacity-50"
                   >
-                    {saving ? "Saving…" : "Save"}
+                    {saving ? t("saving") : t("save")}
                   </button>
                   <button
                     type="button"
@@ -550,7 +545,7 @@ export default function AdminPage() {
                     disabled={saving}
                     className="flex-1 rounded-xl border border-gray-300 py-2 text-sm font-semibold text-gray-700"
                   >
-                    Cancel
+                    {t("cancel")}
                   </button>
                 </div>
               </li>
@@ -562,8 +557,10 @@ export default function AdminPage() {
                   </p>
                   <p className="text-xs text-gray-400">
                     {c.label ? `${c.label} · ` : ""}
-                    {c.redemption_count} /{" "}
-                    {c.max_redemptions ?? "unlimited"} redeemed
+                    {t("admin.redeemedOf", {
+                      count: c.redemption_count,
+                      max: c.max_redemptions ?? t("admin.unlimited"),
+                    })}
                   </p>
                 </div>
                 <button
@@ -571,7 +568,7 @@ export default function AdminPage() {
                   onClick={() => startEdit(c)}
                   className="shrink-0 text-xs font-semibold text-indigo-600"
                 >
-                  Edit
+                  {t("edit")}
                 </button>
                 <button
                   type="button"
@@ -582,14 +579,14 @@ export default function AdminPage() {
                       : "bg-gray-100 text-gray-500"
                   }`}
                 >
-                  {c.active ? "Active" : "Inactive"}
+                  {c.active ? t("admin.active") : t("admin.inactive")}
                 </button>
                 <button
                   type="button"
                   onClick={() => removeCode(c)}
                   className="shrink-0 text-xs font-semibold text-red-600"
                 >
-                  Delete
+                  {t("delete")}
                 </button>
               </li>
             )
@@ -599,15 +596,14 @@ export default function AdminPage() {
 
       {/* Redemptions */}
       <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-        <h2 className="text-sm font-semibold text-gray-900">Redemptions</h2>
+        <h2 className="text-sm font-semibold text-gray-900">{t("admin.redemptionsTitle")}</h2>
         <p className="mt-1 text-xs text-gray-500">
-          Everyone who's currently ad-free via a promo code. Revoking removes
-          it immediately — ads resume for that account.
+          {t("admin.redemptionsHint")}
         </p>
         <ul className="mt-3 divide-y divide-gray-100">
           {redemptions.length === 0 && (
             <li className="py-4 text-center text-sm text-gray-400">
-              No redemptions yet.
+              {t("admin.noRedemptions")}
             </li>
           )}
           {redemptions.map((r) => (
@@ -617,8 +613,12 @@ export default function AdminPage() {
                   {r.email ?? r.user_id}
                 </p>
                 <p className="text-xs text-gray-400">
-                  code {r.code} ·{" "}
-                  {new Date(r.redeemed_at).toLocaleDateString("en-MY")}
+                  {t("admin.codeDate", {
+                    code: r.code,
+                    date: new Date(r.redeemed_at).toLocaleDateString(
+                      lang === "zh" ? "zh-CN" : lang === "ms" ? "ms-MY" : "en-MY"
+                    ),
+                  })}
                 </p>
               </div>
               <button
@@ -627,7 +627,7 @@ export default function AdminPage() {
                 disabled={revoking === r.user_id}
                 className="shrink-0 text-xs font-semibold text-red-600 disabled:opacity-50"
               >
-                {revoking === r.user_id ? "…" : "Revoke"}
+                {revoking === r.user_id ? "…" : t("admin.revoke")}
               </button>
             </li>
           ))}
