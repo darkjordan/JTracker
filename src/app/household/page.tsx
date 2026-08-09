@@ -14,6 +14,7 @@ import {
   removeMember,
   type Household,
 } from "@/lib/api/household";
+import { useI18n } from "@/lib/i18n-client";
 
 export default function HouseholdPage() {
   const [household, setHousehold] = useState<Household | null>(null);
@@ -24,6 +25,7 @@ export default function HouseholdPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const { t } = useI18n();
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -36,10 +38,10 @@ export default function HouseholdPage() {
   }, []);
 
   useEffect(() => {
-    const t = new URLSearchParams(window.location.search).get("invite");
+    const token = new URLSearchParams(window.location.search).get("invite");
     // Read the invite token from the URL (external) on mount.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (t) setInviteToken(t);
+    if (token) setInviteToken(token);
     (async () => {
       await load();
     })();
@@ -65,10 +67,10 @@ export default function HouseholdPage() {
         await navigator.share({ title: "Join my JTracker household", url });
       } else {
         await navigator.clipboard.writeText(url);
-        setMsg("Invite link copied to clipboard.");
+        setMsg(t("household.inviteLinkCopied"));
       }
     } catch {
-      setMsg("Couldn’t create invite.");
+      setMsg(t("household.inviteFailed"));
     } finally {
       setBusy(false);
     }
@@ -83,16 +85,16 @@ export default function HouseholdPage() {
       setInviteToken(null);
       window.history.replaceState(null, "", "/household");
       await load();
-      setMsg("Request sent — waiting for the owner to approve you.");
+      setMsg(t("household.requestSent"));
     } catch {
-      setMsg("That invite is invalid or expired.");
+      setMsg(t("household.inviteInvalid"));
     } finally {
       setBusy(false);
     }
   }
 
   async function doLeave() {
-    if (!confirm("Leave this household? Shared data stays with the household.")) return;
+    if (!confirm(t("household.leaveConfirm"))) return;
     setBusy(true);
     try {
       await leaveHousehold();
@@ -123,7 +125,7 @@ export default function HouseholdPage() {
   }
 
   async function doRemove(userId: string, label: string) {
-    if (!confirm(`Remove ${label} from the household?`)) return;
+    if (!confirm(t("household.removeConfirm", { label }))) return;
     setBusyId(userId);
     try {
       await removeMember(userId);
@@ -143,31 +145,29 @@ export default function HouseholdPage() {
   return (
     <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
       <header className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight text-gray-900">Household</h1>
-        <Link href="/" className="text-sm font-medium text-indigo-600">Done</Link>
+        <h1 className="text-xl font-bold tracking-tight text-gray-900">{t("household.title")}</h1>
+        <Link href="/" className="text-sm font-medium text-indigo-600">{t("done")}</Link>
       </header>
 
       {/* Pending invite (opened a fresh invite link) */}
       {inviteToken && !inThisHousehold && (
         <section className="mb-4 rounded-2xl bg-indigo-50 p-4 ring-1 ring-indigo-200">
           <p className="text-sm font-medium text-indigo-900">
-            You’ve been invited to a household
+            {t("household.invitedTitle")}
           </p>
           <p className="mt-1 text-xs text-indigo-700">
-            The owner must <b>approve</b> your request before you see or edit
-            the shared finances.
+            {t("household.invitedHint")}
           </p>
           {me?.anon ? (
             <>
               <p className="mt-2 text-xs text-indigo-700">
-                Sign in with Google first — a joined household needs a real account
-                so it follows you across devices.
+                {t("household.signInFirstHint")}
               </p>
               <Link
                 href={`/login?next=${encodeURIComponent(`/household?invite=${inviteToken}`)}`}
                 className="mt-3 block w-full rounded-xl bg-indigo-600 py-2.5 text-center text-sm font-semibold text-white"
               >
-                Sign in with Google to join
+                {t("household.signInToJoin")}
               </Link>
             </>
           ) : (
@@ -177,25 +177,24 @@ export default function HouseholdPage() {
               disabled={busy}
               className="mt-3 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {busy ? "Requesting…" : "Request to join"}
+              {busy ? t("household.requesting") : t("household.requestToJoin")}
             </button>
           )}
         </section>
       )}
 
       {loading ? (
-        <p className="py-10 text-center text-sm text-gray-400">Loading…</p>
+        <p className="py-10 text-center text-sm text-gray-400">{t("loading")}</p>
       ) : household ? (
         <>
           {/* Pending-approval waiting state for the requester themselves */}
           {iAmPending && (
             <section className="mb-4 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
               <p className="text-sm font-medium text-amber-900">
-                Waiting for approval
+                {t("household.waitingApproval")}
               </p>
               <p className="mt-1 text-xs text-amber-700">
-                Your request to join <b>{household.name}</b> is pending. You can
-                keep using JTracker on your own until the owner approves you.
+                {t("household.waitingApprovalHint", { name: household.name })}
               </p>
             </section>
           )}
@@ -204,13 +203,13 @@ export default function HouseholdPage() {
           {isOwner && pending.length > 0 && (
             <section className="mb-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
               <h2 className="text-sm font-semibold text-gray-900">
-                Join requests ({pending.length})
+                {t("household.joinRequests", { n: pending.length })}
               </h2>
               <ul className="mt-2 divide-y divide-gray-100">
                 {pending.map((m) => (
                   <li key={m.user_id} className="flex items-center justify-between gap-2 py-2">
                     <span className="min-w-0 flex-1 truncate text-sm text-gray-900">
-                      {m.email || "Anonymous"}
+                      {m.email || t("household.anonymous")}
                     </span>
                     <button
                       type="button"
@@ -218,7 +217,7 @@ export default function HouseholdPage() {
                       disabled={busyId === m.user_id}
                       className="shrink-0 rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-600 disabled:opacity-50"
                     >
-                      Reject
+                      {t("household.reject")}
                     </button>
                     <button
                       type="button"
@@ -226,7 +225,7 @@ export default function HouseholdPage() {
                       disabled={busyId === m.user_id}
                       className="shrink-0 rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
                     >
-                      Approve
+                      {t("household.approve")}
                     </button>
                   </li>
                 ))}
@@ -237,24 +236,26 @@ export default function HouseholdPage() {
           <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
             <h2 className="text-sm font-semibold text-gray-900">{household.name}</h2>
             <p className="mt-1 text-xs text-gray-500">
-              {active.length} member{active.length === 1 ? "" : "s"} · everyone shares all finances
+              {active.length === 1
+                ? t("household.memberCountOne")
+                : t("household.memberCountMany", { n: active.length })}
             </p>
             <ul className="mt-3 divide-y divide-gray-100">
               {active.map((m) => (
                 <li key={m.user_id} className="flex items-center gap-2 py-2 text-sm">
                   <span className="min-w-0 flex-1 truncate text-gray-900">
-                    {m.email || "Anonymous (not signed in)"}
-                    {m.user_id === me?.id && <span className="text-gray-400"> · you</span>}
+                    {m.email || t("household.anonymousNotSignedIn")}
+                    {m.user_id === me?.id && <span className="text-gray-400">{t("household.you")}</span>}
                   </span>
                   <span className="shrink-0 text-xs text-gray-400 capitalize">{m.role}</span>
                   {isOwner && m.user_id !== me?.id && (
                     <button
                       type="button"
-                      onClick={() => doRemove(m.user_id, m.email || "this member")}
+                      onClick={() => doRemove(m.user_id, m.email || t("household.thisMember"))}
                       disabled={busyId === m.user_id}
                       className="shrink-0 text-xs font-medium text-red-500 disabled:opacity-50"
                     >
-                      Remove
+                      {t("household.remove")}
                     </button>
                   )}
                 </li>
@@ -269,7 +270,7 @@ export default function HouseholdPage() {
               disabled={busy}
               className="mt-4 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
-              Invite someone (share link)
+              {t("household.inviteShare")}
             </button>
           )}
           <button
@@ -278,23 +279,21 @@ export default function HouseholdPage() {
             disabled={busy}
             className="mt-2 w-full rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-600 disabled:opacity-50"
           >
-            {iAmPending ? "Cancel request" : "Leave household"}
+            {iAmPending ? t("household.cancelRequest") : t("household.leaveHousehold")}
           </button>
         </>
       ) : (
         <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-          <h2 className="text-sm font-semibold text-gray-900">Share with your family</h2>
+          <h2 className="text-sm font-semibold text-gray-900">{t("household.shareWithFamily")}</h2>
           <p className="mt-1 text-xs text-gray-500">
-            Create a household and invite others. As owner, you approve who joins.
-            All approved members see and edit the same transactions, accounts,
-            goals, and tax relief.{" "}
-            {me?.anon && "Sign in with Google first so it syncs across devices."}
+            {t("household.createHint")}{" "}
+            {me?.anon && t("household.signInFirstShort")}
           </p>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Household name (e.g. Chin Family)"
+            placeholder={t("household.namePlaceholder")}
             className="mt-3 w-full rounded-xl border border-gray-300 px-3 py-2.5 text-base outline-none focus:border-indigo-600"
           />
           <button
@@ -303,7 +302,7 @@ export default function HouseholdPage() {
             disabled={busy}
             className="mt-2 w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
-            Create household
+            {t("household.createHousehold")}
           </button>
         </section>
       )}
@@ -311,8 +310,7 @@ export default function HouseholdPage() {
       {msg && <p className="mt-3 text-center text-xs text-gray-600">{msg}</p>}
 
       <p className="mt-6 px-1 text-center text-[11px] text-gray-400">
-        Fully shared: approved household members can see & edit all of the
-        household’s data. The owner approves joins and can remove members.
+        {t("household.footer")}
       </p>
     </main>
   );

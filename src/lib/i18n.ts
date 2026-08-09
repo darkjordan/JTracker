@@ -337,6 +337,47 @@ const en: Dict = {
   "relief.editHint": "edit for YA {year}; blank = LHDN default",
   "relief.footer":
     "Caps are defaults to verify against LHDN for the assessment year — edit any that differ. Not tax advice.",
+
+  // household
+  "household.title": "Household",
+  "household.invitedTitle": "You've been invited to a household",
+  "household.invitedHint":
+    "The owner must approve your request before you see or edit the shared finances.",
+  "household.signInFirstHint":
+    "Sign in with Google first — a joined household needs a real account so it follows you across devices.",
+  "household.signInToJoin": "Sign in with Google to join",
+  "household.requesting": "Requesting…",
+  "household.requestToJoin": "Request to join",
+  "household.waitingApproval": "Waiting for approval",
+  "household.waitingApprovalHint":
+    "Your request to join {name} is pending. You can keep using JTracker on your own until the owner approves you.",
+  "household.joinRequests": "Join requests ({n})",
+  "household.anonymous": "Anonymous",
+  "household.reject": "Reject",
+  "household.approve": "Approve",
+  "household.memberCountOne": "1 member · everyone shares all finances",
+  "household.memberCountMany": "{n} members · everyone shares all finances",
+  "household.anonymousNotSignedIn": "Anonymous (not signed in)",
+  "household.you": " · you",
+  "household.remove": "Remove",
+  "household.inviteShare": "Invite someone (share link)",
+  "household.cancelRequest": "Cancel request",
+  "household.leaveHousehold": "Leave household",
+  "household.shareWithFamily": "Share with your family",
+  "household.createHint":
+    "Create a household and invite others. As owner, you approve who joins. All approved members see and edit the same transactions, accounts, goals, and tax relief.",
+  "household.signInFirstShort": " Sign in with Google first so it syncs across devices.",
+  "household.namePlaceholder": "Household name (e.g. Chin Family)",
+  "household.createHousehold": "Create household",
+  "household.footer":
+    "Fully shared: approved household members can see & edit all of the household's data. The owner approves joins and can remove members.",
+  "household.inviteLinkCopied": "Invite link copied to clipboard.",
+  "household.inviteFailed": "Couldn't create invite.",
+  "household.requestSent": "Request sent — waiting for the owner to approve you.",
+  "household.inviteInvalid": "That invite is invalid or expired.",
+  "household.leaveConfirm": "Leave this household? Shared data stays with the household.",
+  "household.removeConfirm": "Remove {label} from the household?",
+  "household.thisMember": "this member",
 };
 
 const zh: Dict = {
@@ -630,6 +671,42 @@ const zh: Dict = {
   "relief.capNone": "无",
   "relief.editHint": "为 {year} 课税年编辑；留空 = LHDN 默认值",
   "relief.footer": "上限为默认值，请与 LHDN 核实该课税年的实际上限 — 如有不同请自行编辑。此非税务建议。",
+
+  "household.title": "家庭",
+  "household.invitedTitle": "您已被邀请加入一个家庭",
+  "household.invitedHint": "户主必须先批准您的请求，您才能查看或编辑共享财务数据。",
+  "household.signInFirstHint": "请先使用 Google 登录 — 加入家庭需要真实账号，以便跨设备同步。",
+  "household.signInToJoin": "使用 Google 登录以加入",
+  "household.requesting": "请求中…",
+  "household.requestToJoin": "请求加入",
+  "household.waitingApproval": "等待批准",
+  "household.waitingApprovalHint": "您加入「{name}」的请求正在等待批准。在户主批准之前，您仍可单独使用 JTracker。",
+  "household.joinRequests": "加入请求（{n}）",
+  "household.anonymous": "匿名用户",
+  "household.reject": "拒绝",
+  "household.approve": "批准",
+  "household.memberCountOne": "1 位成员 · 所有人共享全部财务数据",
+  "household.memberCountMany": "{n} 位成员 · 所有人共享全部财务数据",
+  "household.anonymousNotSignedIn": "匿名用户（未登录）",
+  "household.you": " · 你",
+  "household.remove": "移除",
+  "household.inviteShare": "邀请他人（分享链接）",
+  "household.cancelRequest": "取消请求",
+  "household.leaveHousehold": "退出家庭",
+  "household.shareWithFamily": "与家人共享",
+  "household.createHint":
+    "创建一个家庭并邀请其他人。作为户主，您可批准谁能加入。所有已批准的成员可查看和编辑相同的交易、账户、目标和税务减免。",
+  "household.signInFirstShort": " 请先使用 Google 登录，以便跨设备同步。",
+  "household.namePlaceholder": "家庭名称（如 陈氏家庭）",
+  "household.createHousehold": "创建家庭",
+  "household.footer": "完全共享：已批准的家庭成员可查看并编辑该家庭的所有数据。户主批准加入请求并可移除成员。",
+  "household.inviteLinkCopied": "邀请链接已复制到剪贴板。",
+  "household.inviteFailed": "邀请创建失败。",
+  "household.requestSent": "请求已发送 — 等待户主批准。",
+  "household.inviteInvalid": "该邀请无效或已过期。",
+  "household.leaveConfirm": "确定要退出此家庭吗？共享数据将保留在该家庭中。",
+  "household.removeConfirm": "将 {label} 从家庭中移除？",
+  "household.thisMember": "此成员",
 };
 
 const ms: Dict = {
@@ -932,6 +1009,46 @@ const ms: Dict = {
   "relief.editHint": "edit untuk TT {year}; kosong = lalai LHDN",
   "relief.footer":
     "Had adalah lalai untuk disahkan dengan LHDN bagi tahun taksiran — edit mana-mana yang berbeza. Bukan nasihat cukai.",
+
+  "household.title": "Isi Rumah",
+  "household.invitedTitle": "Anda telah dijemput ke isi rumah",
+  "household.invitedHint":
+    "Pemilik mesti meluluskan permintaan anda sebelum anda boleh lihat atau edit kewangan yang dikongsi.",
+  "household.signInFirstHint":
+    "Log masuk dengan Google dahulu — isi rumah yang disertai memerlukan akaun sebenar supaya ia mengikut anda merentas peranti.",
+  "household.signInToJoin": "Log masuk dengan Google untuk sertai",
+  "household.requesting": "Meminta…",
+  "household.requestToJoin": "Minta untuk sertai",
+  "household.waitingApproval": "Menunggu kelulusan",
+  "household.waitingApprovalHint":
+    "Permintaan anda untuk menyertai {name} sedang tertunda. Anda boleh terus guna JTracker sendiri sehingga pemilik meluluskan anda.",
+  "household.joinRequests": "Permintaan menyertai ({n})",
+  "household.anonymous": "Tanpa nama",
+  "household.reject": "Tolak",
+  "household.approve": "Lulus",
+  "household.memberCountOne": "1 ahli · semua berkongsi semua kewangan",
+  "household.memberCountMany": "{n} ahli · semua berkongsi semua kewangan",
+  "household.anonymousNotSignedIn": "Tanpa nama (belum log masuk)",
+  "household.you": " · anda",
+  "household.remove": "Alih keluar",
+  "household.inviteShare": "Jemput seseorang (kongsi pautan)",
+  "household.cancelRequest": "Batal permintaan",
+  "household.leaveHousehold": "Tinggalkan isi rumah",
+  "household.shareWithFamily": "Kongsi dengan keluarga anda",
+  "household.createHint":
+    "Cipta isi rumah dan jemput orang lain. Sebagai pemilik, anda meluluskan sesiapa yang menyertai. Semua ahli yang diluluskan boleh lihat dan edit transaksi, akaun, matlamat, dan pelepasan cukai yang sama.",
+  "household.signInFirstShort": " Log masuk dengan Google dahulu supaya ia disegerakkan merentas peranti.",
+  "household.namePlaceholder": "Nama isi rumah (cth. Keluarga Chin)",
+  "household.createHousehold": "Cipta isi rumah",
+  "household.footer":
+    "Dikongsi sepenuhnya: ahli isi rumah yang diluluskan boleh lihat & edit semua data isi rumah. Pemilik meluluskan penyertaan dan boleh alih keluar ahli.",
+  "household.inviteLinkCopied": "Pautan jemputan disalin ke papan keratan.",
+  "household.inviteFailed": "Gagal cipta jemputan.",
+  "household.requestSent": "Permintaan dihantar — menunggu pemilik meluluskan anda.",
+  "household.inviteInvalid": "Jemputan itu tidak sah atau telah tamat tempoh.",
+  "household.leaveConfirm": "Tinggalkan isi rumah ini? Data dikongsi kekal dengan isi rumah.",
+  "household.removeConfirm": "Alih keluar {label} daripada isi rumah?",
+  "household.thisMember": "ahli ini",
 };
 
 const messages: Record<Lang, Dict> = { en, zh, ms };
