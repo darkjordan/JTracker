@@ -5,6 +5,7 @@ import { MoneyPrivacyProvider } from "@/components/money-privacy";
 import ServiceWorker from "./service-worker";
 
 const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+const MEDIANET_CLIENT_ID = process.env.NEXT_PUBLIC_MEDIANET_CLIENT_ID;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,6 +59,20 @@ export default function RootLayout({
             async
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
             crossOrigin="anonymous"
+          />
+        )}
+        {MEDIANET_CLIENT_ID && (
+          // Same reasoning as the AdSense script above: a plain native tag,
+          // not next/script, so Media.net's site-verification crawler sees
+          // it in the raw server-rendered HTML. NOTE: this is Media.net's
+          // standard documented loader pattern, not yet verified against a
+          // live account (the user doesn't have one yet) — the exact script
+          // may need adjusting once real Media.net-generated code exists,
+          // the same way the AdSense integration needed a fix after testing
+          // against Google's actual crawler.
+          <script
+            async
+            src={`https://contextual.media.net/dmedianet.js?cid=${MEDIANET_CLIENT_ID}`}
           />
         )}
         <ServiceWorker />

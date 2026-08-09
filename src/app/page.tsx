@@ -17,13 +17,12 @@ import CategoryDonut from "@/components/category-donut";
 import CashFlowBar from "@/components/cash-flow-bar";
 import Sparkline from "@/components/sparkline";
 import TrendChart from "@/components/trend-chart";
-import AdBanner from "@/components/ad-banner";
+import AdSlot from "@/components/ad-slot";
 import { PrivacyToggle } from "@/components/money-privacy";
 import { listCategories } from "@/lib/api/categories";
 import { listReliefs } from "@/lib/api/tax-relief";
 import { getHousehold } from "@/lib/api/household";
-import { getAdFreeStatus, getAdSettings } from "@/lib/api/promo";
-import { isWithinGracePeriod } from "@/lib/ads";
+import { getAdEligibility } from "@/lib/api/promo";
 import { createClient } from "@/lib/supabase/client";
 import { memberBadges, type MemberBadge } from "@/lib/member-colors";
 import type { ReliefRow } from "@/lib/relief";
@@ -107,22 +106,15 @@ export default function Dashboard() {
         },
         rel,
         hh,
-        adFree,
-        adSettings,
+        adEligible,
       ] = await Promise.all([
         listCategories(),
         supabase.auth.getUser(),
         listReliefs(y),
         getHousehold(),
-        getAdFreeStatus(),
-        getAdSettings(),
+        getAdEligibility(),
       ]);
-      setShowAd(
-        !!user &&
-          adSettings.ads_enabled &&
-          !adFree &&
-          !isWithinGracePeriod(user.created_at, adSettings.ad_grace_days)
-      );
+      setShowAd(adEligible);
       // Only offer the scope toggle (and tag transactions by member) when
       // actually sharing with >1 APPROVED member — pending requesters have
       // no shared data yet.
@@ -398,7 +390,7 @@ export default function Dashboard() {
           />
         )}
 
-        {showAd && <AdBanner />}
+        {showAd && <AdSlot placement="dashboard" />}
       </main>
 
       {toastMsg && (

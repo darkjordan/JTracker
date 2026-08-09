@@ -92,8 +92,10 @@ Management API (**one statement per call**). Keep migrations in `supabase/migrat
 ## Environment variables (names only; set in `.env.local` + Vercel)
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and (Edge Function
 secrets, server-side) `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` as needed.
-`NEXT_PUBLIC_ADSENSE_CLIENT_ID`, `NEXT_PUBLIC_ADSENSE_DASHBOARD_SLOT` — ads
-(see status below); the ad slot silently no-ops until both are set.
+`NEXT_PUBLIC_ADSENSE_CLIENT_ID`, `NEXT_PUBLIC_MEDIANET_CLIENT_ID` — the two
+ad networks' sitewide loader scripts (see status below). Per-placement slot
+IDs are no longer env vars — they live in the DB-driven `ad_slots` table,
+managed via `/admin`. `NEXT_PUBLIC_ADSENSE_DASHBOARD_SLOT` is deprecated.
 
 ## Current status (keep short; update as phases ship)
 **Phase 1 DONE** (money core + manual entry). Gate passed: Vitest 15/15
@@ -305,20 +307,51 @@ CSV export, Supabase client/server + anon-session proxy.
   item/lock/wrong-PIN/lockout) against a real (non-anonymous) confirmed test
   account.
 - **Ads + promo-code back office (2026-08-09):** additive, not part of the
-  phased plan. Migration `0016_ads_promo_codes.sql`: `app_admins` (seeded with
-  jordan.chin90@gmail.com) + `is_app_admin()`/`am_i_admin()` — the app's first
-  admin concept, modeled on the networth-PIN gate (server-side-enforced via
-  SECURITY DEFINER, never client-trusted). `app_settings` single-row table =
-  master kill-switch (`ads_enabled`) + configurable grace period
-  (`ad_grace_days`, default 7) before a new account sees any ad. `promo_codes`
-  + `promo_redemptions` (one redemption per user, permanent) + RPC
-  `redeem_promo_code` (rejects anonymous callers — an unlock tied to an
-  anon session could be lost to `purge_stale_anon`). `src/lib/ads.ts`
-  (`isWithinGracePeriod`, pure + tested) + `src/lib/api/promo.ts` + ad slot
-  `src/components/ad-banner.tsx` (renders nothing until AdSense env vars are
-  set) wired into the Dashboard (`src/app/page.tsx`). Redeem UI in
-  `/settings`; admin back office at `/admin` (master switch + code CRUD).
-  **Inert until the user completes AdSense site approval and sets
-  `NEXT_PUBLIC_ADSENSE_CLIENT_ID`/`NEXT_PUBLIC_ADSENSE_DASHBOARD_SLOT`** in
-  `.env.local` + Vercel — that step is external and can't be done for them.
-- **Next: Phase 8** (Goals), then Phase 9 (i18n EN/中文/BM). PWA + SSO shipped.
+  phased plan. `app_admins` (seeded with jordan.chin90@gmail.com) +
+  `is_app_admin()`/`am_i_admin()` — the app's first admin concept, modeled on
+  the networth-PIN gate (server-side-enforced via SECURITY DEFINER, never
+  client-trusted). `app_settings` = master kill-switch (`ads_enabled`) +
+  grace period (`ad_grace_days`, default 7). `promo_codes` + `promo_redemptions`
+  (one redemption per user, permanent unlock) via RPC `redeem_promo_code`
+  (rejects anonymous callers). Admin back office at `/admin`: promo code CRUD
+  incl. inline edit, a **Redemptions** list showing who redeemed each code
+  (via `list_promo_redemptions()`, joins `auth.users` since it's not exposed
+  to PostgREST) with one-tap **Revoke**. Redeem UI in `/settings`.
+  **AdSense site verification is LIVE and passed** (client
+  `ca-pub-4805262881199667`) — found and fixed a real bug along the way:
+  `next/script` (even `strategy="beforeInteractive"`) only writes a `<link
+  rel="preload">` into server HTML and injects the real `<script>` client-side
+  post-hydration, which Google's raw-HTML crawler never sees — fixed by using
+  a plain native `<script>` JSX element instead, confirmed byte-for-byte via
+  curl against the live site. AdSense account approval (separate from site
+  verification) is still pending — Google's timeline, not actionable here.
+- **Multi-placement ads + Media.net (2026-08-09):** `ad_slots` table
+  (`placement` primary key, `network` adsense|medianet, `client_id`,
+  `slot_id`, `enabled`; public read since ad IDs aren't secret, admin-only
+  write) replaces the old single hardcoded Dashboard/AdSense-only setup.
+  `src/components/ad-slot.tsx` (`<AdSlot placement="dashboard"/>`) renders
+  whichever network a placement is configured for. `getAdEligibility()` in
+  `src/lib/api/promo.ts` centralizes the master-switch/grace-period/promo
+  check so any page can reuse it, not just the Dashboard. Admin back office
+  gained an "Ad placements" section with an **Add new placement** form — this
+  is the actual "click add new" ask. Media.net's embed
+  (`window._mNHandle`/`loadTag` pattern in `layout.tsx` + `ad-slot.tsx`) is a
+  **best-effort implementation against their standard documented snippet,
+  NOT verified against a live account** (none exists yet) — expect it may
+  need the same kind of fix AdSense's `next/script` issue needed, once the
+  user actually signs up and can test against real generated code.
+  `NEXT_PUBLIC_ADSENSE_DASHBOARD_SLOT` is deprecated (slot IDs now live in
+  `ad_slots`); `NEXT_PUBLIC_MEDIANET_CLIENT_ID` added, unset until the user
+  has a Media.net account.
+- **Phase 8 DONE (2026-08-09): Goals.** `goals` table, household-shared (RLS
+  matches `accounts`, not the private `networth_items` pattern).
+  `goalProgress()` (pure, tested) computes pct/remaining/done/days-left.
+  `/goals` page + `GoalCard` follow the existing accounts-page +
+  `plan-card.tsx` patterns (inline-editable current amount, full Edit toggle,
+  progress bar). Nav link added to Dashboard.
+- **In progress: Phase 9** (i18n EN/中文/BM full app, offline quick-entry
+  queue, share_target, SSO nudge) — being built now, staged as separate
+  commits/gates. Offline queue + share_target need real-device confirmation
+  before push (Background Sync unsupported on iOS Safari; share_target needs
+  an installed PWA in the OS share sheet) — per rule #1, will flag explicitly
+  when that stage is ready rather than assume it works from a dev-server test.

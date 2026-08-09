@@ -17,6 +17,16 @@ import {
   type PromoCode,
   type Redemption,
 } from "@/lib/api/promo";
+import {
+  listAdSlots,
+  createAdSlot,
+  updateAdSlot,
+  deleteAdSlot,
+  type AdSlotRow,
+  type AdNetwork,
+} from "@/lib/api/ad-slots";
+
+const NETWORKS: AdNetwork[] = ["adsense", "medianet"];
 
 export default function AdminPage() {
   const [checked, setChecked] = useState(false);
@@ -42,12 +52,28 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [editMsg, setEditMsg] = useState<string | null>(null);
 
+  const [adSlots, setAdSlots] = useState<AdSlotRow[]>([]);
+  const [newPlacement, setNewPlacement] = useState("");
+  const [newNetwork, setNewNetwork] = useState<AdNetwork>("adsense");
+  const [newClientId, setNewClientId] = useState("");
+  const [newSlotId, setNewSlotId] = useState("");
+  const [creatingSlot, setCreatingSlot] = useState(false);
+  const [slotMsg, setSlotMsg] = useState<string | null>(null);
+  const [editingPlacement, setEditingPlacement] = useState<string | null>(null);
+  const [editSlotNetwork, setEditSlotNetwork] = useState<AdNetwork>("adsense");
+  const [editSlotClientId, setEditSlotClientId] = useState("");
+  const [editSlotSlotId, setEditSlotSlotId] = useState("");
+
   const loadCodes = useCallback(async () => {
     setCodes(await listPromoCodes());
   }, []);
 
   const loadRedemptions = useCallback(async () => {
     setRedemptions(await listPromoRedemptions());
+  }, []);
+
+  const loadAdSlots = useCallback(async () => {
+    setAdSlots(await listAdSlots());
   }, []);
 
   useEffect(() => {
@@ -60,10 +86,11 @@ export default function AdminPage() {
           getAdSettings().then(setSettings),
           loadCodes(),
           loadRedemptions(),
+          loadAdSlots(),
         ]);
       }
     })();
-  }, [loadCodes, loadRedemptions]);
+  }, [loadCodes, loadRedemptions, loadAdSlots]);
 
   async function saveSettings(patch: Partial<AdSettings>) {
     if (!settings) return;
@@ -157,6 +184,57 @@ export default function AdminPage() {
     }
   }
 
+  async function createSlot() {
+    if (!newPlacement.trim() || !newClientId.trim() || !newSlotId.trim()) return;
+    setCreatingSlot(true);
+    setSlotMsg(null);
+    try {
+      await createAdSlot({
+        placement: newPlacement,
+        network: newNetwork,
+        client_id: newClientId,
+        slot_id: newSlotId,
+      });
+      setNewPlacement("");
+      setNewClientId("");
+      setNewSlotId("");
+      setNewNetwork("adsense");
+      await loadAdSlots();
+    } catch {
+      setSlotMsg("Couldn't create that placement — it may already exist.");
+    } finally {
+      setCreatingSlot(false);
+    }
+  }
+
+  async function toggleSlotEnabled(s: AdSlotRow) {
+    await updateAdSlot(s.placement, { enabled: !s.enabled });
+    await loadAdSlots();
+  }
+
+  function startEditSlot(s: AdSlotRow) {
+    setEditingPlacement(s.placement);
+    setEditSlotNetwork(s.network);
+    setEditSlotClientId(s.client_id);
+    setEditSlotSlotId(s.slot_id);
+  }
+
+  async function saveEditSlot(placement: string) {
+    await updateAdSlot(placement, {
+      network: editSlotNetwork,
+      client_id: editSlotClientId.trim(),
+      slot_id: editSlotSlotId.trim(),
+    });
+    setEditingPlacement(null);
+    await loadAdSlots();
+  }
+
+  async function removeSlot(s: AdSlotRow) {
+    if (!confirm(`Delete ad placement "${s.placement}"?`)) return;
+    await deleteAdSlot(s.placement);
+    await loadAdSlots();
+  }
+
   if (!checked) {
     return (
       <main className="mx-auto w-full max-w-md px-4 pb-24 pt-6">
@@ -229,6 +307,155 @@ export default function AdminPage() {
             </label>
           </>
         )}
+      </section>
+
+      {/* Ad placements */}
+      <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
+        <h2 className="text-sm font-semibold text-gray-900">Ad placements</h2>
+        <p className="mt-1 text-xs text-gray-500">
+          Each placement is one ad spot in the app, wired to whichever
+          network you choose — different placements can run different
+          networks side by side.
+        </p>
+
+        <div className="mt-3 space-y-2">
+          <input
+            type="text"
+            value={newPlacement}
+            onChange={(e) => setNewPlacement(e.target.value)}
+            placeholder="Placement key (e.g. dashboard)"
+            className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
+          />
+          <select
+            value={newNetwork}
+            onChange={(e) => setNewNetwork(e.target.value as AdNetwork)}
+            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
+          >
+            {NETWORKS.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            value={newClientId}
+            onChange={(e) => setNewClientId(e.target.value)}
+            placeholder="Client ID (e.g. ca-pub-... or Media.net cid)"
+            className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
+          />
+          <input
+            type="text"
+            value={newSlotId}
+            onChange={(e) => setNewSlotId(e.target.value)}
+            placeholder="Slot / ad unit ID"
+            className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={createSlot}
+            disabled={
+              creatingSlot ||
+              !newPlacement.trim() ||
+              !newClientId.trim() ||
+              !newSlotId.trim()
+            }
+            className="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {creatingSlot ? "Adding…" : "Add new placement"}
+          </button>
+          {slotMsg && <p className="text-xs text-red-600">{slotMsg}</p>}
+        </div>
+
+        <ul className="mt-4 divide-y divide-gray-100">
+          {adSlots.length === 0 && (
+            <li className="py-4 text-center text-sm text-gray-400">
+              No ad placements yet.
+            </li>
+          )}
+          {adSlots.map((s) =>
+            editingPlacement === s.placement ? (
+              <li key={s.placement} className="space-y-2 py-3">
+                <p className="font-mono text-sm font-medium text-gray-900">
+                  {s.placement}
+                </p>
+                <select
+                  value={editSlotNetwork}
+                  onChange={(e) => setEditSlotNetwork(e.target.value as AdNetwork)}
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
+                >
+                  {NETWORKS.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={editSlotClientId}
+                  onChange={(e) => setEditSlotClientId(e.target.value)}
+                  placeholder="Client ID"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
+                />
+                <input
+                  type="text"
+                  value={editSlotSlotId}
+                  onChange={(e) => setEditSlotSlotId(e.target.value)}
+                  placeholder="Slot / ad unit ID"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => saveEditSlot(s.placement)}
+                    className="flex-1 rounded-xl bg-indigo-600 py-2 text-sm font-semibold text-white"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingPlacement(null)}
+                    className="flex-1 rounded-xl border border-gray-300 py-2 text-sm font-semibold text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </li>
+            ) : (
+              <li key={s.placement} className="flex items-center gap-3 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-sm font-medium text-gray-900">
+                    {s.placement}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {s.network} · slot {s.slot_id}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => startEditSlot(s)}
+                  className="shrink-0 text-xs font-semibold text-indigo-600"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleSlotEnabled(s)}
+                  className={`shrink-0 rounded-lg px-2 py-1 text-xs font-semibold ${
+                    s.enabled
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {s.enabled ? "Enabled" : "Disabled"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeSlot(s)}
+                  className="shrink-0 text-xs font-semibold text-red-600"
+                >
+                  Delete
+                </button>
+              </li>
+            )
+          )}
+        </ul>
       </section>
 
       {/* Promo codes */}

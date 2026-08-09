@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { isWithinGracePeriod } from "@/lib/ads";
 
 export type RedeemResult = "ok" | "already" | "invalid" | "exhausted";
 
@@ -148,4 +149,26 @@ export async function revokePromoRedemption(userId: string): Promise<void> {
     p_user_id: userId,
   });
   if (error) throw error;
+}
+
+/**
+ * Combines the master switch, grace period, and promo-code unlock into one
+ * check — reused by every page that renders an <AdSlot>, not just the
+ * Dashboard.
+ */
+export async function getAdEligibility(): Promise<boolean> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+  const [adFree, settings] = await Promise.all([
+    getAdFreeStatus(),
+    getAdSettings(),
+  ]);
+  return (
+    settings.ads_enabled &&
+    !adFree &&
+    !isWithinGracePeriod(user.created_at, settings.ad_grace_days)
+  );
 }
