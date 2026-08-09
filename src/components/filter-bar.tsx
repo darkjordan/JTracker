@@ -1,6 +1,7 @@
 "use client";
 
 import type { Category, TxType } from "@/lib/api/types";
+import { useI18n } from "@/lib/i18n-client";
 
 export type TypeFilter = "all" | TxType;
 
@@ -26,6 +27,7 @@ export default function FilterBar({
   reviewedOnly: boolean;
   onReviewedOnly: (v: boolean) => void;
 }) {
+  const { t } = useI18n();
   const field =
     "rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-600 bg-white";
   const opts = categories.filter(
@@ -38,29 +40,29 @@ export default function FilterBar({
         type="text"
         value={search}
         onChange={(e) => onSearch(e.target.value)}
-        placeholder="Search merchant…"
-        aria-label="Search"
+        placeholder={t("filter.search")}
+        aria-label={t("filter.searchLabel")}
         className={`w-full ${field}`}
       />
       <div className="flex gap-2">
         <select
           value={type}
           onChange={(e) => onType(e.target.value as TypeFilter)}
-          aria-label="Type filter"
+          aria-label={t("filter.typeLabel")}
           className={`flex-1 ${field}`}
         >
-          <option value="all">All types</option>
-          <option value="expense">Expenses</option>
-          <option value="income">Income</option>
+          <option value="all">{t("filter.allTypes")}</option>
+          <option value="expense">{t("filter.expenses")}</option>
+          <option value="income">{t("filter.income")}</option>
         </select>
         <select
           value={category ?? ""}
           onChange={(e) => onCategory(e.target.value || null)}
-          aria-label="Category filter"
+          aria-label={t("filter.categoryLabel")}
           className={`flex-1 ${field}`}
         >
-          <option value="">All categories</option>
-          <option value="uncat">Uncategorized</option>
+          <option value="">{t("filter.allCategories")}</option>
+          <option value="uncat">{t("entry.uncategorized")}</option>
           {opts.map((c) => (
             <option key={c.id} value={c.id}>
               {c.icon ? `${c.icon} ` : ""}
@@ -78,7 +80,7 @@ export default function FilterBar({
               : "border-gray-300 text-gray-500"
           }`}
         >
-          To review
+          {t("filter.toReview")}
         </button>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { formatSen, normalizeMerchant } from "@/lib/money";
 import { createTransaction, todayLocal } from "@/lib/api/transactions";
 import { findOrCreateCategory } from "@/lib/api/categories";
 import AmountInput from "@/components/amount-input";
+import { useI18n } from "@/lib/i18n-client";
 import type { Category, Transaction, TxType } from "@/lib/api/types";
 
 const OTHER = "__other__";
@@ -29,6 +30,7 @@ export default function QuickEntry({
   const [date, setDate] = useState(todayLocal());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useI18n();
 
   const isIncome = type === "income";
 
@@ -51,7 +53,7 @@ export default function QuickEntry({
   async function add() {
     const sen = amountSen;
     if (sen <= 0) {
-      setError("Enter an amount.");
+      setError(t("entry.enterAmount"));
       return;
     }
     setError(null);
@@ -62,7 +64,7 @@ export default function QuickEntry({
       if (categoryId === OTHER) {
         const name = customCat.trim();
         if (!name) {
-          setError("Name the new category, or pick one.");
+          setError(t("entry.nameNewCategory"));
           setBusy(false);
           return;
         }
@@ -73,7 +75,7 @@ export default function QuickEntry({
         category_id = categoryId;
       }
 
-      const t = await createTransaction({
+      const txn = await createTransaction({
         type,
         amount_sen: sen,
         merchant: merchant.trim() || (isIncome ? "Income" : "Expense"),
@@ -88,10 +90,10 @@ export default function QuickEntry({
       setCategoryId("");
       setCustomCat("");
       setDate(todayLocal());
-      onAdded(t);
+      onAdded(txn);
       if (created) onCategoryCreated?.();
     } catch {
-      setError("Couldn’t save. Try again.");
+      setError(t("entry.saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -111,7 +113,7 @@ export default function QuickEntry({
             !isIncome ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-500"
           }`}
         >
-          − Expense
+          {t("entry.expense")}
         </button>
         <button
           type="button"
@@ -120,7 +122,7 @@ export default function QuickEntry({
             isIncome ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-500"
           }`}
         >
-          + Income
+          {t("entry.income")}
         </button>
       </div>
 
@@ -132,6 +134,7 @@ export default function QuickEntry({
           sen={amountSen}
           onChangeSen={onAmountChange}
           onKeyDown={(e) => e.key === "Enter" && add()}
+          ariaLabel={t("entry.amountLabel")}
           className="w-full bg-transparent py-2.5 text-2xl font-bold tabular-nums outline-none placeholder:text-gray-300"
         />
       </div>
@@ -142,8 +145,8 @@ export default function QuickEntry({
         value={merchant}
         onChange={(e) => setMerchant(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && add()}
-        placeholder="What for? (e.g. Nasi Lemak)"
-        aria-label="Description"
+        placeholder={t("entry.description")}
+        aria-label={t("entry.descriptionLabel")}
         className={`mt-2 w-full ${field}`}
       />
 
@@ -152,24 +155,24 @@ export default function QuickEntry({
         <select
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
-          aria-label="Category"
+          aria-label={t("entry.categoryLabel")}
           className={`w-full bg-white ${field}`}
         >
-          <option value="">Uncategorized</option>
+          <option value="">{t("entry.uncategorized")}</option>
           {options.map((c) => (
             <option key={c.id} value={c.id}>
               {c.icon ? `${c.icon} ` : ""}
               {c.name}
             </option>
           ))}
-          <option value={OTHER}>＋ Other…</option>
+          <option value={OTHER}>{t("entry.otherCategory")}</option>
         </select>
         <input
           type="date"
           value={date}
           max={todayLocal()}
           onChange={(e) => setDate(e.target.value)}
-          aria-label="Date"
+          aria-label={t("entry.dateLabel")}
           className={`w-full ${field}`}
         />
       </div>
@@ -180,8 +183,8 @@ export default function QuickEntry({
           value={customCat}
           onChange={(e) => setCustomCat(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="New category name"
-          aria-label="New category name"
+          placeholder={t("entry.newCategoryName")}
+          aria-label={t("entry.newCategoryName")}
           className={`mt-2 w-full ${field}`}
           autoFocus
         />
@@ -198,10 +201,12 @@ export default function QuickEntry({
         }`}
       >
         {busy
-          ? "Adding…"
+          ? t("entry.adding")
           : amountSen
-            ? `Add ${formatSen(amountSen)} ${isIncome ? "income" : "expense"}`
-            : "Add"}
+            ? t(isIncome ? "entry.addIncomeAmount" : "entry.addExpenseAmount", {
+                amount: formatSen(amountSen),
+              })
+            : t("entry.add")}
       </button>
     </div>
   );

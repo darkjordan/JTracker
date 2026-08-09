@@ -19,6 +19,7 @@ import Sparkline from "@/components/sparkline";
 import TrendChart from "@/components/trend-chart";
 import AdSlot from "@/components/ad-slot";
 import { PrivacyToggle } from "@/components/money-privacy";
+import LanguageSwitcher from "@/app/language-switcher";
 import { listCategories } from "@/lib/api/categories";
 import { listReliefs } from "@/lib/api/tax-relief";
 import { getHousehold } from "@/lib/api/household";
@@ -42,6 +43,7 @@ import {
   type MonthPoint,
 } from "@/lib/stats";
 import { formatRM } from "@/lib/money";
+import { useI18n } from "@/lib/i18n-client";
 import type { Category, Transaction } from "@/lib/api/types";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -70,6 +72,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState<MainTab>("add");
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showAd, setShowAd] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     // One-time read of the persisted preference (see money-privacy.tsx for why
@@ -132,11 +135,11 @@ export default function Dashboard() {
       setTrend(bucketMonthly(range, months));
       setReliefs(rel);
     } catch {
-      setError("Couldn’t load your data. Check your connection and retry.");
+      setError(t("dash.loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     (async () => {
@@ -218,9 +221,10 @@ export default function Dashboard() {
             JTracker
           </h1>
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <PrivacyToggle />
             <Link href="/settings" className="text-sm font-medium text-gray-500">
-              Settings
+              {t("settings")}
             </Link>
           </div>
         </header>
@@ -231,10 +235,15 @@ export default function Dashboard() {
           <>
             <QuickEntry
               categories={categories}
-              onAdded={(t) => {
+              onAdded={(txn) => {
                 load(sel.y, sel.m, scope);
                 setToastMsg(
-                  `Added ${formatRM(t.amount_sen)} ${t.type === "income" ? "income" : "expense"}`
+                  t(
+                    txn.type === "income"
+                      ? "entry.addedIncome"
+                      : "entry.addedExpense",
+                    { amount: formatRM(txn.amount_sen) }
+                  )
                 );
               }}
             />
@@ -244,7 +253,7 @@ export default function Dashboard() {
               reliefs={reliefs}
               onSaved={() => {
                 load(sel.y, sel.m, scope);
-                setToastMsg("Saved from scan");
+                setToastMsg(t("entry.savedFromScan"));
               }}
             />
 
@@ -252,7 +261,7 @@ export default function Dashboard() {
               categories={categories}
               onCommitted={() => {
                 load(sel.y, sel.m, scope);
-                setToastMsg("Statement imported");
+                setToastMsg(t("entry.statementImported"));
               }}
             />
           </>
@@ -264,7 +273,7 @@ export default function Dashboard() {
                 type="button"
                 onClick={() => step(-1)}
                 className="rounded-lg px-3 py-1 text-lg text-gray-500 active:bg-gray-100"
-                aria-label="Previous month"
+                aria-label={t("hist.prevMonth")}
               >
                 ‹
               </button>
@@ -274,7 +283,7 @@ export default function Dashboard() {
                 onClick={() => step(1)}
                 disabled={isCurrentMonth}
                 className="rounded-lg px-3 py-1 text-lg text-gray-500 active:bg-gray-100 disabled:opacity-30"
-                aria-label="Next month"
+                aria-label={t("hist.nextMonth")}
               >
                 ›
               </button>
@@ -287,7 +296,7 @@ export default function Dashboard() {
             {loading ? (
               <div className="flex flex-col items-center justify-center gap-3 py-20">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-indigo-600" />
-                <p className="text-sm text-gray-400">Loading…</p>
+                <p className="text-sm text-gray-400">{t("loading")}</p>
               </div>
             ) : error ? (
               <div className="py-10 text-center">
@@ -300,7 +309,7 @@ export default function Dashboard() {
                   }}
                   className="mt-3 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
                 >
-                  Retry
+                  {t("retry")}
                 </button>
               </div>
             ) : (
@@ -311,11 +320,11 @@ export default function Dashboard() {
 
                 <nav className="mb-4 grid grid-cols-2 gap-2">
                   {[
-                    { href: "/accounts", label: "💰 Accounts" },
-                    { href: "/recurring", label: "🔁 Recurring" },
-                    { href: "/relief", label: "🎯 Relief" },
-                    { href: "/goals", label: "🏁 Goals" },
-                    { href: "/household", label: "👨‍👩‍👧 Household" },
+                    { href: "/accounts", label: t("nav.accounts") },
+                    { href: "/recurring", label: t("nav.recurring") },
+                    { href: "/relief", label: t("nav.relief") },
+                    { href: "/goals", label: t("nav.goals") },
+                    { href: "/household", label: t("nav.household") },
                   ].map((l) => (
                     <Link
                       key={l.href}
@@ -361,8 +370,8 @@ export default function Dashboard() {
                   {shown.length === 0 ? (
                     <p className="py-10 text-center text-sm text-gray-500">
                       {hasFilter
-                        ? "No transactions match these filters."
-                        : "No transactions this month. Tap Add below to log one."}
+                        ? t("hist.noTxnsFiltered")
+                        : t("hist.noTxns")}
                     </p>
                   ) : (
                     <TransactionList

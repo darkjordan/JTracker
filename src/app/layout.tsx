@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { MoneyPrivacyProvider } from "@/components/money-privacy";
 import ServiceWorker from "./service-worker";
+import { LanguageProvider } from "@/lib/i18n-client";
+import { getLang } from "@/lib/i18n-server";
 
 const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 const MEDIANET_CLIENT_ID = process.env.NEXT_PUBLIC_MEDIANET_CLIENT_ID;
@@ -36,14 +38,15 @@ export const viewport: Viewport = {
   viewportFit: "cover", // lets the fixed bottom tab bar pad for the iOS home indicator
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const lang = await getLang();
   return (
     <html
-      lang="en"
+      lang={lang}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
@@ -75,8 +78,10 @@ export default function RootLayout({
             src={`https://contextual.media.net/dmedianet.js?cid=${MEDIANET_CLIENT_ID}`}
           />
         )}
-        <ServiceWorker />
-        <MoneyPrivacyProvider>{children}</MoneyPrivacyProvider>
+        <LanguageProvider lang={lang}>
+          <ServiceWorker />
+          <MoneyPrivacyProvider>{children}</MoneyPrivacyProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

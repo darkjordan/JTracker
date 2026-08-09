@@ -1,13 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n-client";
 
 export type MainTab = "add" | "history";
-
-const TABS: { id: MainTab; icon: string; label: string }[] = [
-  { id: "add", icon: "➕", label: "Add" },
-  { id: "history", icon: "📜", label: "History" },
-];
 
 const tabClass = (active: boolean) =>
   `flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs font-medium ${
@@ -24,6 +20,11 @@ export default function TabBar({
   tab: MainTab;
   onTab: (t: MainTab) => void;
 }) {
+  const { t } = useI18n();
+  const TABS: { id: MainTab; icon: string; label: string }[] = [
+    { id: "add", icon: "➕", label: t("tab.add") },
+    { id: "history", icon: "📜", label: t("tab.history") },
+  ];
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200 bg-white/95 backdrop-blur"
@@ -44,7 +45,7 @@ export default function TabBar({
         ))}
         <Link href="/networth" className={tabClass(false)}>
           <span className="text-lg leading-none">📈</span>
-          Net Worth
+          {t("tab.netWorth")}
         </Link>
       </div>
     </nav>
